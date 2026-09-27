@@ -1,14 +1,17 @@
 "use client";
 
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { motion } from "framer-motion";
-import { Plus } from "lucide-react";
+import { ImageIcon, Plus, RotateCcw } from "lucide-react";
 import { CourseFilterBar } from "@/components/dashboard/CourseFilterBar";
 import { QuickAdd } from "@/components/dashboard/QuickAdd";
 import { PriorityQueue } from "@/components/dashboard/PriorityQueue";
 import { ExamCountdowns } from "@/components/dashboard/ExamCountdownCard";
 import { WeeklySchedule } from "@/components/dashboard/WeeklySchedule";
 import { WorkloadRings } from "@/components/dashboard/WorkloadRing";
+import { WallpaperBackground } from "@/components/WallpaperBackground";
+import { useTaskStore } from "@/store/useTaskStore";
+import { fileToWallpaperDataUrl } from "@/lib/wallpaper";
 
 function Panel({
   title,
@@ -38,9 +41,28 @@ function Panel({
 export default function Home() {
   const [quickAddOpen, setQuickAddOpen] = useState(false);
   const [selectedCourseId, setSelectedCourseId] = useState<string | null>(null);
+  const [wallpaperError, setWallpaperError] = useState<string | null>(null);
+  const wallpaperDataUrl = useTaskStore((s) => s.wallpaperDataUrl);
+  const setWallpaper = useTaskStore((s) => s.setWallpaper);
+  const clearWallpaper = useTaskStore((s) => s.clearWallpaper);
+  const wallpaperInputRef = useRef<HTMLInputElement>(null);
+
+  async function handleWallpaperFile(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    e.target.value = "";
+    if (!file) return;
+    setWallpaperError(null);
+    try {
+      const dataUrl = await fileToWallpaperDataUrl(file);
+      setWallpaper(dataUrl);
+    } catch {
+      setWallpaperError("Couldn't set that image as your wallpaper — try a smaller file.");
+    }
+  }
 
   return (
     <div className="mx-auto flex w-full max-w-7xl flex-1 flex-col px-4 py-6">
+      <WallpaperBackground />
       <nav className="rijks-card flex flex-wrap items-center gap-4 px-5 py-3">
         <div className="flex shrink-0 items-center gap-2">
           <span className="font-sans text-xl font-extrabold tracking-tight text-zinc-900">
@@ -56,6 +78,32 @@ export default function Home() {
           <CourseFilterBar selectedCourseId={selectedCourseId} onSelectCourse={setSelectedCourseId} />
         </div>
 
+        <input
+          ref={wallpaperInputRef}
+          type="file"
+          accept="image/*"
+          onChange={handleWallpaperFile}
+          className="hidden"
+        />
+        <button
+          onClick={() => wallpaperInputRef.current?.click()}
+          title="Set custom wallpaper"
+          aria-label="Set custom wallpaper"
+          className="flex shrink-0 items-center gap-1.5 rounded-full border border-black/10 bg-white/50 px-3 py-2 text-xs font-medium text-zinc-700 transition-all hover:-translate-y-0.5 hover:bg-white/80"
+        >
+          <ImageIcon className="h-3.5 w-3.5" />
+        </button>
+        {wallpaperDataUrl && (
+          <button
+            onClick={() => clearWallpaper()}
+            title="Reset to default wallpaper"
+            aria-label="Reset to default wallpaper"
+            className="flex shrink-0 items-center gap-1.5 rounded-full border border-black/10 bg-white/50 px-3 py-2 text-xs font-medium text-zinc-700 transition-all hover:-translate-y-0.5 hover:bg-white/80"
+          >
+            <RotateCcw className="h-3.5 w-3.5" />
+          </button>
+        )}
+
         <button
           onClick={() => setQuickAddOpen((v) => !v)}
           className="flex shrink-0 items-center gap-2 rounded-full bg-[#8B7EC8] px-5 py-2 text-xs font-medium uppercase tracking-wider text-white shadow-[0_4px_16px_rgba(139,126,200,0.28)] transition-all hover:-translate-y-0.5 hover:bg-[#7A6CB8]"
@@ -63,6 +111,8 @@ export default function Home() {
           <Plus className="h-3.5 w-3.5" /> Add Item
         </button>
       </nav>
+
+      {wallpaperError && <p className="mt-2 text-xs font-medium text-[#DC2626]">{wallpaperError}</p>}
 
       <QuickAdd open={quickAddOpen} onClose={() => setQuickAddOpen(false)} />
 
