@@ -535,12 +535,12 @@
 
       <audio
         id="bg-music"
-        src="assets/music/happy-beats-business-moves-vol-1-by-ende-dot-app.mp3"
+        src="assets/music/upbeat-lofi-study.wav"
         data-start="0"
         data-duration="18"
         data-track-index="10"
         data-volume="1"
-        data-automation='{"version":1,"lanes":[{"target":"volume","points":[{"t":0,"v":0},{"t":0.5,"v":0.35},{"t":14.5,"v":0.35},{"t":15.3,"v":0.2},{"t":17.2,"v":0.2},{"t":18,"v":0}]}]}'
+        data-automation='{"version":1,"lanes":[{"target":"volume","points":[{"t":0,"v":0},{"t":0.5,"v":0.34},{"t":14.5,"v":0.34},{"t":15.3,"v":0.2},{"t":17.2,"v":0.2},{"t":18,"v":0}]}]}'
       ></audio>
 
       <audio id="sfx-plaque-swap" src="assets/sfx/interface/click_003.ogg" data-start="1.6" data-duration="0.01" data-track-index="11" data-volume="0.7"></audio>
@@ -561,7 +561,7 @@
       // ===== Scene 1: museum plaque hook (0-3s) =====
       tl.fromTo("#s1-inner", { autoAlpha: 0, y: 12 }, { autoAlpha: 1, y: 0, duration: 0.3, ease: "power2.out" }, 0.0);
       // hold #plaque-a (1906/Monet) from 0 to 1.6, then crossfade to #plaque-b (2026/homework)
-      // beat-grid: no strong cue lands in this window; natural timing chosen so the label swap gets a full readable hold.
+      // music: ambient piano/strings bed has no strong rhythmic pulse to snap to; timing chosen for readability.
       tl.to("#plaque-a", { autoAlpha: 0, duration: 0.3, ease: "power1.inOut" }, 1.6);
       tl.to("#plaque-b", { autoAlpha: 1, duration: 0.3, ease: "power1.inOut" }, 1.6);
       tl.to("#s1-inner", { autoAlpha: 0, duration: 0.25, ease: "power1.in" }, 2.75);
@@ -569,7 +569,6 @@
       // ===== Scene 2: dashboard reveal (3-6s) =====
       tl.fromTo("#s2-inner #nav-bar", { autoAlpha: 0, y: -16 }, { autoAlpha: 1, y: 0, duration: 0.3, ease: "power2.out" }, 3.0);
       tl.fromTo("#badge-term", { autoAlpha: 0, scale: 0.9 }, { autoAlpha: 1, scale: 1, duration: 0.3, ease: "back.out(2)" }, 3.3);
-      // beat-grid: pill 1 snapped to beat 3.52s (within 0.03s of authored 3.55s)
       tl.fromTo("#pill-1", { autoAlpha: 0, x: -8 }, { autoAlpha: 1, x: 0, duration: 0.3, ease: "power2.out" }, 3.52);
       tl.fromTo("#pill-2", { autoAlpha: 0, x: -8 }, { autoAlpha: 1, x: 0, duration: 0.3, ease: "power2.out" }, 3.85);
       tl.to("#s2-inner", { autoAlpha: 0, duration: 0.25, ease: "power1.in" }, 5.75);
@@ -577,7 +576,6 @@
       // ===== Scene 3: priority queue + completion (6-11s) =====
       tl.fromTo("#s3-inner #pq-panel", { autoAlpha: 0, y: 10 }, { autoAlpha: 1, y: 0, duration: 0.3, ease: "power2.out" }, 6.0);
       tl.fromTo("#row-1", { autoAlpha: 0, y: 4 }, { autoAlpha: 1, y: 0, duration: 0.18, ease: "power1.out" }, 6.2);
-      // beat-grid: row 2 snapped to beat 6.52s (within 0.02s of authored 6.50s)
       tl.fromTo("#row-2", { autoAlpha: 0, y: 4 }, { autoAlpha: 1, y: 0, duration: 0.18, ease: "power1.out" }, 6.52);
       tl.fromTo("#row-3", { autoAlpha: 0, y: 4 }, { autoAlpha: 1, y: 0, duration: 0.18, ease: "power1.out" }, 6.8);
 

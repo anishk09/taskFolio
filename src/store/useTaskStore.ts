@@ -8,6 +8,7 @@ type TaskState = {
   exams: Exam[];
   studyBlocks: StudyBlock[];
   hasHydrated: boolean;
+  wallpaperDataUrl: string | null;
 
   addCourse: (course: Omit<Course, "id">) => void;
   removeCourse: (id: string) => void;
@@ -23,6 +24,9 @@ type TaskState = {
   removeStudyBlock: (id: string) => void;
 
   setHasHydrated: () => void;
+
+  setWallpaper: (dataUrl: string) => void;
+  clearWallpaper: () => void;
 };
 
 export const useTaskStore = create<TaskState>()(
@@ -33,6 +37,7 @@ export const useTaskStore = create<TaskState>()(
       exams: [],
       studyBlocks: [],
       hasHydrated: false,
+      wallpaperDataUrl: null,
 
       addCourse: (course) =>
         set((s) => ({ courses: [...s.courses, { ...course, id: crypto.randomUUID() }] })),
@@ -76,6 +81,9 @@ export const useTaskStore = create<TaskState>()(
         set((s) => ({ studyBlocks: s.studyBlocks.filter((b) => b.id !== id) })),
 
       setHasHydrated: () => set({ hasHydrated: true }),
+
+      setWallpaper: (dataUrl) => set({ wallpaperDataUrl: dataUrl }),
+      clearWallpaper: () => set({ wallpaperDataUrl: null }),
     }),
     {
       name: "ultimatetaskmanager-storage",
@@ -84,6 +92,7 @@ export const useTaskStore = create<TaskState>()(
         assignments: s.assignments,
         exams: s.exams,
         studyBlocks: s.studyBlocks,
+        wallpaperDataUrl: s.wallpaperDataUrl,
       }),
       onRehydrateStorage: () => (state) => {
         state?.setHasHydrated();
