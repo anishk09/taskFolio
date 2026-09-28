@@ -14,6 +14,7 @@ import { GalleryCalendar } from "@/components/dashboard/GalleryCalendar";
 import { WallpaperBackground } from "@/components/WallpaperBackground";
 import { FeedbackButton } from "@/components/FeedbackButton";
 import { WelcomeVideoModal } from "@/components/onboarding/WelcomeVideoModal";
+import { AddToHomeScreenPrompt } from "@/components/onboarding/AddToHomeScreenPrompt";
 import { GpaForecasterModal } from "@/components/dashboard/GpaForecasterModal";
 import { ExportCardModal } from "@/components/dashboard/ExportCardModal";
 import { ClearedMilestoneCard } from "@/components/dashboard/ClearedMilestoneCard";
@@ -56,6 +57,7 @@ export default function Home() {
   const [selectedDate, setSelectedDate] = useState<Date | null>(null);
   const [wallpaperError, setWallpaperError] = useState<string | null>(null);
   const [introOpen, setIntroOpen] = useState(false);
+  const [introClosedCount, setIntroClosedCount] = useState(0);
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [forecasterOpen, setForecasterOpen] = useState(false);
   const [milestoneOpen, setMilestoneOpen] = useState(false);
@@ -101,6 +103,7 @@ export default function Home() {
   function closeIntro() {
     localStorage.setItem(INTRO_SEEN_KEY, "true");
     setIntroOpen(false);
+    setIntroClosedCount((c) => c + 1);
   }
 
   async function handleWallpaperFile(e: React.ChangeEvent<HTMLInputElement>) {
@@ -321,6 +324,7 @@ export default function Home() {
       )}
 
       <WelcomeVideoModal open={introOpen} onClose={closeIntro} />
+      <AddToHomeScreenPrompt trigger={introClosedCount} />
       <FeedbackButton />
     </div>
   );
