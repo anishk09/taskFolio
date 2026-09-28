@@ -311,13 +311,17 @@ export function QuickAdd({ open, onClose }: { open: boolean; onClose: () => void
                   const f = new FormData(e.currentTarget);
                   const title = String(f.get("title") || "").trim();
                   if (!title) return;
-                  addTodo(title);
+                  const dueDate = String(f.get("dueDate") || "").trim();
+                  const dueTime = String(f.get("dueTime") || "").trim();
+                  addTodo(title, dueDate || undefined, dueTime || undefined);
                   e.currentTarget.reset();
                   onClose();
                 }}
               >
                 <div className="flex flex-wrap gap-3">
                   <input name="title" required placeholder="e.g. Renew gym membership" className={`${inputCls} w-64`} />
+                  <input name="dueDate" type="date" title="Due date (optional)" className={`${inputCls} w-40`} />
+                  <input name="dueTime" type="time" title="Due time (optional)" className={`${inputCls} w-28`} />
                 </div>
                 <div className="flex justify-end">
                   <button className={pillButtonCls}>Add To-Do</button>

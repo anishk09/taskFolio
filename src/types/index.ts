@@ -49,4 +49,6 @@ export type Todo = {
   title: string;
   done: boolean;
   createdAt: string; // ISO
+  dueDate?: string; // "YYYY-MM-DD"
+  dueTime?: string; // "HH:MM"
 };

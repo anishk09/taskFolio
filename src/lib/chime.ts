@@ -33,3 +33,33 @@ export function playAchievementChime(): void {
 
   setTimeout(() => ctx.close(), 1400);
 }
+
+// A crisp, glassy two-note tick for checking off a single to-do — lighter
+// and quicker than the milestone chime above, since this fires far more
+// often and shouldn't compete for attention.
+export function playGlassChime(): void {
+  if (typeof window === "undefined") return;
+  const AudioCtor = window.AudioContext ?? (window as unknown as { webkitAudioContext?: typeof AudioContext }).webkitAudioContext;
+  if (!AudioCtor) return;
+
+  const ctx = new AudioCtor();
+  const now = ctx.currentTime;
+  const tonesHz = [1318.51, 1975.53]; // E6, B6 — a clean perfect fifth
+
+  tonesHz.forEach((freq, i) => {
+    const osc = ctx.createOscillator();
+    const gain = ctx.createGain();
+    osc.type = "sine";
+    osc.frequency.value = freq;
+    const start = now + i * 0.04;
+    gain.gain.setValueAtTime(0, start);
+    gain.gain.linearRampToValueAtTime(0.045, start + 0.01);
+    gain.gain.exponentialRampToValueAtTime(0.0001, start + 0.45);
+    osc.connect(gain);
+    gain.connect(ctx.destination);
+    osc.start(start);
+    osc.stop(start + 0.5);
+  });
+
+  setTimeout(() => ctx.close(), 700);
+}

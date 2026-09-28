@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import { motion } from "framer-motion";
-import { Calculator, ImageIcon, MoreVertical, Plus, RotateCcw } from "lucide-react";
+import { Calculator, ImageIcon, MoreVertical, Plus, QrCode, RotateCcw } from "lucide-react";
 import { CourseFilterBar } from "@/components/dashboard/CourseFilterBar";
 import { QuickAdd } from "@/components/dashboard/QuickAdd";
 import { PriorityQueue } from "@/components/dashboard/PriorityQueue";
@@ -17,6 +17,7 @@ import { WelcomeVideoModal } from "@/components/onboarding/WelcomeVideoModal";
 import { GpaForecasterModal } from "@/components/dashboard/GpaForecasterModal";
 import { ExportCardModal } from "@/components/dashboard/ExportCardModal";
 import { ClearedMilestoneCard } from "@/components/dashboard/ClearedMilestoneCard";
+import { SyncDeviceModal } from "@/components/dashboard/SyncDeviceModal";
 import { useTaskStore } from "@/store/useTaskStore";
 import { fileToWallpaperDataUrl } from "@/lib/wallpaper";
 import { isAllTasksCleared } from "@/lib/milestone";
@@ -57,12 +58,23 @@ export default function Home() {
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [forecasterOpen, setForecasterOpen] = useState(false);
   const [milestoneOpen, setMilestoneOpen] = useState(false);
+  const [syncModalOpen, setSyncModalOpen] = useState(false);
+  const syncKey = useTaskStore((s) => s.syncKey);
+  const ensureSyncKey = useTaskStore((s) => s.ensureSyncKey);
   const wallpaperDataUrl = useTaskStore((s) => s.wallpaperDataUrl);
   const setWallpaper = useTaskStore((s) => s.setWallpaper);
   const clearWallpaper = useTaskStore((s) => s.clearWallpaper);
   const assignments = useTaskStore((s) => s.assignments);
+  const todos = useTaskStore((s) => s.todos);
   const wallpaperInputRef = useRef<HTMLInputElement>(null);
   const cleared = isAllTasksCleared(assignments);
+
+  // When there's nothing left in the Priority Queue but general to-dos are
+  // still pending, put the to-do list first so users aren't scrolling past
+  // an empty queue to find their actual pending work.
+  const pendingAssignmentsCount = assignments.filter((a) => a.status !== "done").length;
+  const pendingTodosCount = todos.filter((t) => !t.done).length;
+  const elevateTodos = pendingAssignmentsCount === 0 && pendingTodosCount > 0;
 
   useEffect(() => {
     // localStorage is a browser-only external system unavailable during SSR,
@@ -70,7 +82,8 @@ export default function Home() {
     // despite the generic set-state-in-effect lint nudge.
     // eslint-disable-next-line react-hooks/set-state-in-effect
     if (!localStorage.getItem(INTRO_SEEN_KEY)) setIntroOpen(true);
-  }, []);
+    ensureSyncKey();
+  }, [ensureSyncKey]);
 
   function closeIntro() {
     localStorage.setItem(INTRO_SEEN_KEY, "true");
@@ -114,6 +127,16 @@ export default function Home() {
           </div>
 
           <div className="flex shrink-0 items-center gap-1.5 sm:order-3">
+            {syncKey && (
+              <button
+                onClick={() => setSyncModalOpen(true)}
+                title="Sync to Mobile"
+                aria-label="Sync to Mobile"
+                className="flex shrink-0 items-center gap-1.5 rounded-full border border-black/10 bg-white/50 px-3 py-2 text-xs font-medium text-zinc-700 transition-all hover:-translate-y-0.5 hover:bg-white/80"
+              >
+                <QrCode className="h-3.5 w-3.5" />
+              </button>
+            )}
             <button
               onClick={() => setForecasterOpen(true)}
               title="Grade Forecaster"
@@ -188,12 +211,23 @@ export default function Home() {
       <div className="mt-6 grid grid-cols-1 gap-6 lg:grid-cols-12">
         <div className="flex flex-col gap-6 lg:col-span-8">
           <GalleryCalendar selectedDate={selectedDate} onSelectDate={setSelectedDate} />
-          <Panel title="Priority Queue" index={0}>
-            <PriorityQueue filterCourseId={selectedCourseId} filterDate={selectedDate} />
-          </Panel>
-          <Panel title="To-Do List" index={1}>
-            <TodoList />
-          </Panel>
+          {(elevateTodos
+            ? [
+                <Panel key="todo-list" title="To-Do List" index={0}>
+                  <TodoList />
+                </Panel>,
+                <Panel key="priority-queue" title="Priority Queue" index={1}>
+                  <PriorityQueue filterCourseId={selectedCourseId} filterDate={selectedDate} />
+                </Panel>,
+              ]
+            : [
+                <Panel key="priority-queue" title="Priority Queue" index={0}>
+                  <PriorityQueue filterCourseId={selectedCourseId} filterDate={selectedDate} />
+                </Panel>,
+                <Panel key="todo-list" title="To-Do List" index={1}>
+                  <TodoList />
+                </Panel>,
+              ])}
         </div>
 
         <div className="flex flex-col gap-6 lg:col-span-4">
@@ -241,6 +275,10 @@ export default function Home() {
       )}
 
       {forecasterOpen && <GpaForecasterModal onClose={() => setForecasterOpen(false)} />}
+
+      {syncModalOpen && syncKey && (
+        <SyncDeviceModal syncKey={syncKey} onClose={() => setSyncModalOpen(false)} />
+      )}
 
       <WelcomeVideoModal open={introOpen} onClose={closeIntro} />
       <FeedbackButton />
