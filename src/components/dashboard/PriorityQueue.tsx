@@ -108,53 +108,54 @@ export function PriorityQueue({ filterCourseId = null }: { filterCourseId?: stri
                 if (info.offset.x > 120) complete(a.id);
               }}
               style={{ "--accent": accent } as React.CSSProperties}
-              className="group relative flex cursor-grab items-center gap-4 rounded-xl border border-black/10 bg-white/70 px-4 py-4 backdrop-blur-xl transition-[box-shadow,border-color] duration-150 ease-[cubic-bezier(0.2,0,0,1)] hover:border-[color:var(--accent)]/40 hover:shadow-[0_0_28px_-10px_var(--accent)] active:cursor-grabbing"
+              className="group relative flex cursor-grab flex-col gap-2 rounded-xl border border-black/10 bg-white/70 px-4 py-3.5 backdrop-blur-xl transition-[box-shadow,border-color] duration-150 ease-[cubic-bezier(0.2,0,0,1)] hover:border-[color:var(--accent)]/40 hover:shadow-[0_0_28px_-10px_var(--accent)] active:cursor-grabbing"
             >
               <AnimatePresence>{completing && <GoldLeafBloom />}</AnimatePresence>
 
-              <input
-                type="checkbox"
-                aria-label={`Mark ${a.title} done`}
-                checked={completing}
-                onChange={() => complete(a.id)}
-                className="h-5 w-5 shrink-0 accent-[#3FAE73]"
-              />
-              {zone === "urgent" && !completing && <UrgentPulse />}
-
-              <div className="min-w-0 flex-1">
+              <div className="flex items-center gap-3">
+                <input
+                  type="checkbox"
+                  aria-label={`Mark ${a.title} done`}
+                  checked={completing}
+                  onChange={() => complete(a.id)}
+                  className="h-5 w-5 shrink-0 accent-[#3FAE73]"
+                />
+                {zone === "urgent" && !completing && <UrgentPulse />}
                 <p
-                  className={`truncate text-base font-semibold text-zinc-900 transition-opacity duration-150 ${
+                  className={`min-w-0 flex-1 truncate text-base font-semibold text-zinc-900 transition-opacity duration-150 ${
                     completing ? "opacity-40 line-through" : "opacity-100"
                   }`}
                 >
                   {a.title}
                 </p>
-                <div className="mt-1 flex items-center gap-2">
+                <span
+                  className="shrink-0 rounded-full px-2.5 py-1 text-xs font-bold"
+                  style={{ backgroundColor: style.bg, color: style.fg }}
+                >
+                  {days < 0 ? "OVERDUE" : `${Math.ceil(days)}D`}
+                </span>
+              </div>
+
+              <div className="flex items-center justify-between gap-2 pl-8">
+                <div className="flex min-w-0 flex-wrap items-center gap-2">
                   <span
-                    className="inline-flex items-center gap-1 truncate rounded-full px-2 py-0.5 text-[11px] font-semibold"
+                    className="inline-flex shrink-0 items-center gap-1 truncate rounded-full px-2 py-0.5 text-[11px] font-semibold"
                     style={{ backgroundColor: hexToRgba(accent, 0.14), color: PALETTE.ink }}
                   >
                     <span className="h-1.5 w-1.5 shrink-0 rounded-full" style={{ backgroundColor: accent }} />
                     {course?.code ?? "Unknown"}
                   </span>
-                  <span className="text-xs text-zinc-600">{a.weightPct}% of grade</span>
+                  <span className="shrink-0 whitespace-nowrap text-xs text-zinc-600">{a.weightPct}% of grade</span>
                 </div>
+
+                <button
+                  onClick={() => removeAssignment(a.id)}
+                  aria-label={`Delete ${a.title}`}
+                  className="shrink-0 rounded-full p-1 text-zinc-400 opacity-100 transition-opacity hover:bg-black/5 hover:text-[#DC2626] sm:opacity-0 sm:group-hover:opacity-100"
+                >
+                  <Trash2 className="h-3.5 w-3.5" />
+                </button>
               </div>
-
-              <span
-                className="shrink-0 rounded-full px-2.5 py-1 text-xs font-bold"
-                style={{ backgroundColor: style.bg, color: style.fg }}
-              >
-                {days < 0 ? "OVERDUE" : `${Math.ceil(days)}D`}
-              </span>
-
-              <button
-                onClick={() => removeAssignment(a.id)}
-                aria-label={`Delete ${a.title}`}
-                className="shrink-0 rounded-full p-1 text-zinc-400 opacity-0 transition-opacity hover:bg-black/5 hover:text-[#DC2626] group-hover:opacity-100"
-              >
-                <Trash2 className="h-3.5 w-3.5" />
-              </button>
             </motion.li>
           );
         })}

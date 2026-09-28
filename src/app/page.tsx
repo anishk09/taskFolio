@@ -63,50 +63,55 @@ export default function Home() {
   return (
     <div className="mx-auto flex w-full max-w-7xl flex-1 flex-col px-4 py-6">
       <WallpaperBackground />
-      <nav className="rijks-card flex flex-wrap items-center gap-4 px-5 py-3">
-        <div className="flex shrink-0 items-center gap-2">
-          <span className="font-sans text-xl font-extrabold tracking-tight text-zinc-900">
-            taskFolio
-            <span className="text-[#8B7EC8]">.</span>
-          </span>
-          <span className="rounded-full bg-[#8B7EC8]/15 px-2 py-0.5 font-sans text-[10px] font-semibold uppercase tracking-wider text-[#5D4E9E]">
-            Fall 2026
-          </span>
+      <input
+        ref={wallpaperInputRef}
+        type="file"
+        accept="image/*"
+        onChange={handleWallpaperFile}
+        className="hidden"
+      />
+
+      <nav className="rijks-card flex flex-col gap-3 px-4 py-3 sm:flex-row sm:flex-wrap sm:items-center sm:gap-4 sm:px-5">
+        <div className="flex items-center justify-between gap-2 sm:contents">
+          <div className="flex shrink-0 items-center gap-2">
+            <span className="font-sans text-lg font-extrabold tracking-tight text-zinc-900 sm:text-xl">
+              taskFolio
+              <span className="text-[#8B7EC8]">.</span>
+            </span>
+            <span className="rounded-full bg-[#8B7EC8]/15 px-2 py-0.5 font-sans text-[10px] font-semibold uppercase tracking-wider text-[#5D4E9E]">
+              Fall 2026
+            </span>
+          </div>
+
+          <div className="flex shrink-0 items-center gap-1.5 sm:order-3">
+            <button
+              onClick={() => wallpaperInputRef.current?.click()}
+              title="Set custom wallpaper"
+              aria-label="Set custom wallpaper"
+              className="flex shrink-0 items-center gap-1.5 rounded-full border border-black/10 bg-white/50 px-3 py-2 text-xs font-medium text-zinc-700 transition-all hover:-translate-y-0.5 hover:bg-white/80"
+            >
+              <ImageIcon className="h-3.5 w-3.5" />
+            </button>
+            {wallpaperDataUrl && (
+              <button
+                onClick={() => clearWallpaper()}
+                title="Reset to default wallpaper"
+                aria-label="Reset to default wallpaper"
+                className="flex shrink-0 items-center gap-1.5 rounded-full border border-black/10 bg-white/50 px-3 py-2 text-xs font-medium text-zinc-700 transition-all hover:-translate-y-0.5 hover:bg-white/80"
+              >
+                <RotateCcw className="h-3.5 w-3.5" />
+              </button>
+            )}
+          </div>
         </div>
 
-        <div className="min-w-0 flex-1">
+        <div className="min-w-0 sm:order-2 sm:flex-1">
           <CourseFilterBar selectedCourseId={selectedCourseId} onSelectCourse={setSelectedCourseId} />
         </div>
 
-        <input
-          ref={wallpaperInputRef}
-          type="file"
-          accept="image/*"
-          onChange={handleWallpaperFile}
-          className="hidden"
-        />
-        <button
-          onClick={() => wallpaperInputRef.current?.click()}
-          title="Set custom wallpaper"
-          aria-label="Set custom wallpaper"
-          className="flex shrink-0 items-center gap-1.5 rounded-full border border-black/10 bg-white/50 px-3 py-2 text-xs font-medium text-zinc-700 transition-all hover:-translate-y-0.5 hover:bg-white/80"
-        >
-          <ImageIcon className="h-3.5 w-3.5" />
-        </button>
-        {wallpaperDataUrl && (
-          <button
-            onClick={() => clearWallpaper()}
-            title="Reset to default wallpaper"
-            aria-label="Reset to default wallpaper"
-            className="flex shrink-0 items-center gap-1.5 rounded-full border border-black/10 bg-white/50 px-3 py-2 text-xs font-medium text-zinc-700 transition-all hover:-translate-y-0.5 hover:bg-white/80"
-          >
-            <RotateCcw className="h-3.5 w-3.5" />
-          </button>
-        )}
-
         <button
           onClick={() => setQuickAddOpen((v) => !v)}
-          className="flex shrink-0 items-center gap-2 rounded-full bg-[#8B7EC8] px-5 py-2 text-xs font-medium uppercase tracking-wider text-white shadow-[0_4px_16px_rgba(139,126,200,0.28)] transition-all hover:-translate-y-0.5 hover:bg-[#7A6CB8]"
+          className="flex w-full shrink-0 items-center justify-center gap-2 rounded-full bg-[#8B7EC8] px-5 py-2.5 text-xs font-medium uppercase tracking-wider text-white shadow-[0_4px_16px_rgba(139,126,200,0.28)] transition-all hover:-translate-y-0.5 hover:bg-[#7A6CB8] sm:order-4 sm:w-auto sm:py-2"
         >
           <Plus className="h-3.5 w-3.5" /> Add Item
         </button>

@@ -65,7 +65,7 @@ export function ExamCountdowns({ filterCourseId = null }: { filterCourseId?: str
             <button
               onClick={() => removeExam(exam.id)}
               aria-label={`Delete ${exam.title}`}
-              className="absolute right-1.5 top-1.5 rounded-full p-1 text-zinc-400 opacity-0 transition-opacity hover:bg-black/5 hover:text-[#DC2626] group-hover:opacity-100"
+              className="absolute right-1.5 top-1.5 rounded-full p-1 text-zinc-400 opacity-100 transition-opacity hover:bg-black/5 hover:text-[#DC2626] sm:opacity-0 sm:group-hover:opacity-100"
             >
               <Trash2 className="h-3.5 w-3.5" />
             </button>

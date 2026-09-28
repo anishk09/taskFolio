@@ -19,12 +19,12 @@ export function CourseFilterBar({
   }
 
   return (
-    <div className="flex flex-wrap items-center gap-1.5">
+    <div className="no-scrollbar -mx-1 flex items-center gap-1.5 overflow-x-auto px-1 py-0.5 sm:mx-0 sm:flex-wrap sm:overflow-visible sm:px-0 sm:py-0">
       <button
         type="button"
         onClick={() => onSelectCourse(null)}
         aria-pressed={selectedCourseId === null}
-        className={`rounded-full border px-3 py-1.5 text-xs font-semibold transition-colors ${
+        className={`shrink-0 rounded-full border px-3 py-1.5 text-xs font-semibold transition-colors ${
           selectedCourseId === null
             ? "border-[#8B7EC8]/50 bg-[#8B7EC8]/15 text-[#5D4E9E]"
             : "border-black/10 bg-white/50 text-zinc-600 hover:bg-white/80"
@@ -43,7 +43,7 @@ export function CourseFilterBar({
               animate={{ opacity: 1, scale: 1 }}
               exit={{ opacity: 0, scale: 0.9 }}
               style={{ "--accent": course.color } as React.CSSProperties}
-              className={`group/pill flex items-center gap-1 rounded-full border py-1 pl-1 pr-1 text-xs transition-colors ${
+              className={`group/pill flex shrink-0 items-center gap-1 rounded-full border py-1 pl-1 pr-1 text-xs transition-colors ${
                 active
                   ? "border-[color:var(--accent)]/50 bg-[color:var(--accent)]/15"
                   : "border-black/10 bg-white/50 hover:bg-white/80"
