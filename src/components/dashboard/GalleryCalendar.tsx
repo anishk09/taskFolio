@@ -18,7 +18,9 @@ export function GalleryCalendar({
   selectedDate: Date | null;
   onSelectDate: (date: Date | null) => void;
 }) {
-  const [viewMode, setViewMode] = useState<"week" | "month">("week");
+  // Month is the default everywhere; the toggle to switch to week is hidden
+  // on mobile (see below), where a 7-wide week row reads too cramped.
+  const [viewMode, setViewMode] = useState<"week" | "month">("month");
   const [viewedMonth, setViewedMonth] = useState(() => new Date());
   const courses = useTaskStore((s) => s.courses);
   const assignments = useTaskStore((s) => s.assignments);
@@ -126,7 +128,7 @@ export function GalleryCalendar({
         </div>
         <div className="hidden h-px flex-1 bg-gradient-to-l from-transparent via-[#D9B454]/50 to-transparent sm:block" />
 
-        <div className="flex shrink-0 items-center gap-1 rounded-full border border-black/10 bg-white/50 p-0.5 text-xs sm:ml-2">
+        <div className="hidden shrink-0 items-center gap-1 rounded-full border border-black/10 bg-white/50 p-0.5 text-xs sm:ml-2 sm:flex">
           {(["week", "month"] as const).map((mode) => (
             <button
               key={mode}
