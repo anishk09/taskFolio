@@ -131,7 +131,7 @@ export default function Home() {
             </span>
           </div>
 
-          <div className="flex shrink-0 items-center gap-1.5 sm:order-3">
+          <div className="no-scrollbar flex min-w-0 shrink items-center gap-1.5 overflow-x-auto sm:order-3 sm:shrink-0 sm:overflow-visible">
             {courses.length > 0 && (
               <button
                 onClick={() => setRoadmapOpen(true)}
