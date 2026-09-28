@@ -1,6 +1,28 @@
 import { create } from "zustand";
 import { persist } from "zustand/middleware";
+import { customAlphabet } from "nanoid";
 import type { Assignment, Course, Exam, StudyBlock, Todo } from "@/types";
+
+const SYNC_KEY_ALPHABET = "0123456789abcdefghijklmnopqrstuvwxyz";
+const nanoid12 = customAlphabet(SYNC_KEY_ALPHABET, 12);
+
+// Grouped like a license key (e.g. "v9k2-m4q8-p1z7") so it reads cleanly off
+// a screen when a user types it by hand instead of scanning the QR code.
+function generateSyncKey(): string {
+  const raw = nanoid12();
+  return `${raw.slice(0, 4)}-${raw.slice(4, 8)}-${raw.slice(8, 12)}`;
+}
+
+export type MilestoneClear = { date: string; paletteIndex: number; phraseIndex: number };
+
+export type VaultPayload = {
+  courses?: Course[];
+  assignments?: Assignment[];
+  exams?: Exam[];
+  studyBlocks?: StudyBlock[];
+  todos?: Todo[];
+  milestoneClears?: MilestoneClear[];
+};
 
 type TaskState = {
   courses: Course[];
@@ -17,7 +39,11 @@ type TaskState = {
   // within the same day can never inflate the streak or reroll the
   // artwork/phrase — both only change the next time a genuinely new day's
   // full clear is recorded.
-  milestoneClears: { date: string; paletteIndex: number; phraseIndex: number }[];
+  milestoneClears: MilestoneClear[];
+  // This device's Magic Vault sync key — generated once on first load and
+  // persisted, or replaced with another device's key after a QR pairing
+  // hydration so both devices thereafter sync to the same cloud record.
+  syncKey: string | null;
 
   addCourse: (course: Omit<Course, "id">) => void;
   removeCourse: (id: string) => void;
@@ -32,7 +58,7 @@ type TaskState = {
   addStudyBlock: (block: Omit<StudyBlock, "id">) => void;
   removeStudyBlock: (id: string) => void;
 
-  addTodo: (title: string) => void;
+  addTodo: (title: string, dueDate?: string, dueTime?: string) => void;
   removeTodo: (id: string) => void;
   toggleTodoDone: (id: string) => void;
 
@@ -42,6 +68,9 @@ type TaskState = {
   clearWallpaper: () => void;
 
   recordMilestoneClear: (dateKey: string, paletteIndex: number, phraseIndex: number) => void;
+
+  hydrateFromRemote: (payload: VaultPayload, syncKey: string) => void;
+  ensureSyncKey: () => void;
 };
 
 export const useTaskStore = create<TaskState>()(
@@ -55,6 +84,7 @@ export const useTaskStore = create<TaskState>()(
       hasHydrated: false,
       wallpaperDataUrl: null,
       milestoneClears: [],
+      syncKey: null,
 
       addCourse: (course) =>
         set((s) => ({ courses: [...s.courses, { ...course, id: crypto.randomUUID() }] })),
@@ -97,9 +127,12 @@ export const useTaskStore = create<TaskState>()(
       removeStudyBlock: (id) =>
         set((s) => ({ studyBlocks: s.studyBlocks.filter((b) => b.id !== id) })),
 
-      addTodo: (title) =>
+      addTodo: (title, dueDate, dueTime) =>
         set((s) => ({
-          todos: [...s.todos, { id: crypto.randomUUID(), title, done: false, createdAt: new Date().toISOString() }],
+          todos: [
+            ...s.todos,
+            { id: crypto.randomUUID(), title, done: false, createdAt: new Date().toISOString(), dueDate, dueTime },
+          ],
         })),
       removeTodo: (id) => set((s) => ({ todos: s.todos.filter((t) => t.id !== id) })),
       toggleTodoDone: (id) =>
@@ -116,6 +149,21 @@ export const useTaskStore = create<TaskState>()(
             ? s
             : { milestoneClears: [...s.milestoneClears, { date: dateKey, paletteIndex, phraseIndex }] }
         ),
+
+      hydrateFromRemote: (payload, syncKey) =>
+        set(() => ({
+          courses: payload.courses ?? [],
+          assignments: payload.assignments ?? [],
+          exams: payload.exams ?? [],
+          studyBlocks: payload.studyBlocks ?? [],
+          todos: payload.todos ?? [],
+          milestoneClears: payload.milestoneClears ?? [],
+          syncKey,
+        })),
+
+      // Idempotent: a no-op once a key exists, so it's safe to call
+      // unconditionally from a mount effect regardless of render timing.
+      ensureSyncKey: () => set((s) => (s.syncKey ? s : { syncKey: generateSyncKey() })),
     }),
     {
       name: "ultimatetaskmanager-storage",
@@ -127,6 +175,7 @@ export const useTaskStore = create<TaskState>()(
         todos: s.todos,
         wallpaperDataUrl: s.wallpaperDataUrl,
         milestoneClears: s.milestoneClears,
+        syncKey: s.syncKey,
       }),
       onRehydrateStorage: () => (state) => {
         state?.setHasHydrated();
@@ -134,3 +183,39 @@ export const useTaskStore = create<TaskState>()(
     }
   )
 );
+
+// Auto-sync: any change to the vault-relevant slices gets pushed to the
+// cloud after a 1.5s debounce so rapid edits (e.g. checking off several
+// items) collapse into one request instead of one per mutation.
+if (typeof window !== "undefined") {
+  let syncTimer: ReturnType<typeof setTimeout> | null = null;
+  useTaskStore.subscribe((state, prev) => {
+    if (!state.hasHydrated || !state.syncKey) return;
+    const changed =
+      state.courses !== prev.courses ||
+      state.assignments !== prev.assignments ||
+      state.exams !== prev.exams ||
+      state.studyBlocks !== prev.studyBlocks ||
+      state.todos !== prev.todos ||
+      state.milestoneClears !== prev.milestoneClears;
+    if (!changed) return;
+
+    if (syncTimer) clearTimeout(syncTimer);
+    syncTimer = setTimeout(() => {
+      const s = useTaskStore.getState();
+      const payload: VaultPayload = {
+        courses: s.courses,
+        assignments: s.assignments,
+        exams: s.exams,
+        studyBlocks: s.studyBlocks,
+        todos: s.todos,
+        milestoneClears: s.milestoneClears,
+      };
+      fetch(`/api/sync/${s.syncKey}`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ payload }),
+      }).catch(() => {});
+    }, 1500);
+  });
+}
