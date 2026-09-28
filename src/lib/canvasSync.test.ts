@@ -27,6 +27,14 @@ test("parseIcs recognizes a standard [LETTERS DIGITS] tag", () => {
   assert.equal(event.courseName, "Intermediate Macro");
 });
 
+test("parseIcs recognizes a Google Classroom-style leading [Course Name] tag", () => {
+  const ics = vevent(["SUMMARY:[AP Biology] Lab Report 2", "DTSTART:20261005T235900Z"]);
+  const [event] = parseIcs(ics);
+  assert.equal(event.title, "Lab Report 2");
+  assert.equal(event.courseCode, "AP Biology");
+  assert.equal(event.courseName, "AP Biology");
+});
+
 test("parseIcs discards administrative fragments lacking course numbering", () => {
   const ics = [
     vevent(["SUMMARY:Acknowledge compliance module [DO]", "DTSTART:20261005T235900Z"]),

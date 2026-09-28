@@ -1,17 +1,26 @@
 "use client";
 
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { motion } from "framer-motion";
-import { ImageIcon, Plus, RotateCcw } from "lucide-react";
+import { Calculator, ImageIcon, MoreVertical, Plus, RotateCcw } from "lucide-react";
 import { CourseFilterBar } from "@/components/dashboard/CourseFilterBar";
 import { QuickAdd } from "@/components/dashboard/QuickAdd";
 import { PriorityQueue } from "@/components/dashboard/PriorityQueue";
 import { ExamCountdowns } from "@/components/dashboard/ExamCountdownCard";
 import { WeeklySchedule } from "@/components/dashboard/WeeklySchedule";
 import { WorkloadRings } from "@/components/dashboard/WorkloadRing";
+import { GalleryCalendar } from "@/components/dashboard/GalleryCalendar";
 import { WallpaperBackground } from "@/components/WallpaperBackground";
+import { FeedbackButton } from "@/components/FeedbackButton";
+import { WelcomeVideoModal } from "@/components/onboarding/WelcomeVideoModal";
+import { GpaForecasterModal } from "@/components/dashboard/GpaForecasterModal";
+import { ExportCardModal } from "@/components/dashboard/ExportCardModal";
+import { ClearedMilestoneCard } from "@/components/dashboard/ClearedMilestoneCard";
 import { useTaskStore } from "@/store/useTaskStore";
 import { fileToWallpaperDataUrl } from "@/lib/wallpaper";
+import { isAllTasksCleared } from "@/lib/milestone";
+
+const INTRO_SEEN_KEY = "taskfolio_has_seen_intro";
 
 function Panel({
   title,
@@ -25,9 +34,9 @@ function Panel({
   return (
     <motion.section
       layout
-      initial={{ opacity: 0, y: 20 }}
+      initial={{ opacity: 0, y: 12 }}
       animate={{ opacity: 1, y: 0 }}
-      transition={{ type: "spring", stiffness: 90, damping: 15, delay: index * 0.07 }}
+      transition={{ duration: 0.35, delay: index * 0.06, ease: [0.16, 1, 0.3, 1] }}
       className="rijks-card p-6"
     >
       <h2 className="mb-4 border-b border-black/10 pb-3 font-sans text-lg font-bold tracking-tight text-zinc-900">
@@ -41,11 +50,31 @@ function Panel({
 export default function Home() {
   const [quickAddOpen, setQuickAddOpen] = useState(false);
   const [selectedCourseId, setSelectedCourseId] = useState<string | null>(null);
+  const [selectedDate, setSelectedDate] = useState<Date | null>(null);
   const [wallpaperError, setWallpaperError] = useState<string | null>(null);
+  const [introOpen, setIntroOpen] = useState(false);
+  const [settingsOpen, setSettingsOpen] = useState(false);
+  const [forecasterOpen, setForecasterOpen] = useState(false);
+  const [milestoneOpen, setMilestoneOpen] = useState(false);
   const wallpaperDataUrl = useTaskStore((s) => s.wallpaperDataUrl);
   const setWallpaper = useTaskStore((s) => s.setWallpaper);
   const clearWallpaper = useTaskStore((s) => s.clearWallpaper);
+  const assignments = useTaskStore((s) => s.assignments);
   const wallpaperInputRef = useRef<HTMLInputElement>(null);
+  const cleared = isAllTasksCleared(assignments);
+
+  useEffect(() => {
+    // localStorage is a browser-only external system unavailable during SSR,
+    // so syncing it into state after mount is the correct pattern here
+    // despite the generic set-state-in-effect lint nudge.
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    if (!localStorage.getItem(INTRO_SEEN_KEY)) setIntroOpen(true);
+  }, []);
+
+  function closeIntro() {
+    localStorage.setItem(INTRO_SEEN_KEY, "true");
+    setIntroOpen(false);
+  }
 
   async function handleWallpaperFile(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0];
@@ -85,6 +114,14 @@ export default function Home() {
 
           <div className="flex shrink-0 items-center gap-1.5 sm:order-3">
             <button
+              onClick={() => setForecasterOpen(true)}
+              title="Grade Forecaster"
+              aria-label="Grade Forecaster"
+              className="flex shrink-0 items-center gap-1.5 rounded-full border border-black/10 bg-white/50 px-3 py-2 text-xs font-medium text-zinc-700 transition-all hover:-translate-y-0.5 hover:bg-white/80"
+            >
+              <Calculator className="h-3.5 w-3.5" />
+            </button>
+            <button
               onClick={() => wallpaperInputRef.current?.click()}
               title="Set custom wallpaper"
               aria-label="Set custom wallpaper"
@@ -102,6 +139,32 @@ export default function Home() {
                 <RotateCcw className="h-3.5 w-3.5" />
               </button>
             )}
+            <div className="relative">
+              <button
+                onClick={() => setSettingsOpen((v) => !v)}
+                title="Settings"
+                aria-label="Settings"
+                className="flex shrink-0 items-center gap-1.5 rounded-full border border-black/10 bg-white/50 px-3 py-2 text-xs font-medium text-zinc-700 transition-all hover:-translate-y-0.5 hover:bg-white/80"
+              >
+                <MoreVertical className="h-3.5 w-3.5" />
+              </button>
+              {settingsOpen && (
+                <div
+                  onMouseLeave={() => setSettingsOpen(false)}
+                  className="rijks-card absolute right-0 top-full z-20 mt-1 w-40 p-1.5 text-xs"
+                >
+                  <button
+                    onClick={() => {
+                      setIntroOpen(true);
+                      setSettingsOpen(false);
+                    }}
+                    className="w-full rounded-lg px-2.5 py-2 text-left font-medium text-zinc-700 hover:bg-black/5"
+                  >
+                    Replay Gallery Tour
+                  </button>
+                </div>
+              )}
+            </div>
           </div>
         </div>
 
@@ -122,9 +185,10 @@ export default function Home() {
       <QuickAdd open={quickAddOpen} onClose={() => setQuickAddOpen(false)} />
 
       <div className="mt-6 grid grid-cols-1 gap-6 lg:grid-cols-12">
-        <div className="lg:col-span-8">
+        <div className="flex flex-col gap-6 lg:col-span-8">
+          <GalleryCalendar selectedDate={selectedDate} onSelectDate={setSelectedDate} />
           <Panel title="Priority Queue" index={0}>
-            <PriorityQueue filterCourseId={selectedCourseId} />
+            <PriorityQueue filterCourseId={selectedCourseId} filterDate={selectedDate} />
           </Panel>
         </div>
 
@@ -147,6 +211,35 @@ export default function Home() {
         </span>
         <span>Artwork: &quot;Water Lilies&quot; by Claude Monet</span>
       </footer>
+
+      {cleared && (
+        <button
+          onClick={() => setMilestoneOpen(true)}
+          className="fixed bottom-6 left-1/2 z-40 -translate-x-1/2 rounded-full border border-white/50 bg-white/80 px-5 py-2.5 text-xs font-semibold text-zinc-900 shadow-[0_12px_32px_rgba(0,0,0,0.18)] backdrop-blur-xl transition-all hover:-translate-y-0.5"
+        >
+          ✨ Every task cleared · Share Milestone
+        </button>
+      )}
+
+      {milestoneOpen && (
+        <ExportCardModal
+          onClose={() => setMilestoneOpen(false)}
+          filename="taskfolio-cleared"
+          shimmer
+          primaryAction="copy"
+          copyLabel="Collect & Copy Story Card"
+          downloadLabel="Download PNG"
+          primaryClassName="w-full rounded-2xl bg-indigo-600 px-6 py-3 text-sm font-semibold text-white shadow-lg shadow-indigo-500/25 transition-all hover:-translate-y-0.5 hover:bg-indigo-700"
+          secondaryClassName="text-xs font-semibold text-white/70 transition-colors hover:text-white hover:underline"
+        >
+          <ClearedMilestoneCard />
+        </ExportCardModal>
+      )}
+
+      {forecasterOpen && <GpaForecasterModal onClose={() => setForecasterOpen(false)} />}
+
+      <WelcomeVideoModal open={introOpen} onClose={closeIntro} />
+      <FeedbackButton />
     </div>
   );
 }

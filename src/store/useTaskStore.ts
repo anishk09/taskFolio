@@ -9,6 +9,14 @@ type TaskState = {
   studyBlocks: StudyBlock[];
   hasHydrated: boolean;
   wallpaperDataUrl: string | null;
+  // One entry per distinct "YYYY-MM-DD" day every task was cleared, each
+  // locked to the masterpiece palette + celebration phrase shown that day.
+  // Recording a date that's already present is a no-op (keeping its
+  // original indices), so reopening the card or toggling a task on/off
+  // within the same day can never inflate the streak or reroll the
+  // artwork/phrase — both only change the next time a genuinely new day's
+  // full clear is recorded.
+  milestoneClears: { date: string; paletteIndex: number; phraseIndex: number }[];
 
   addCourse: (course: Omit<Course, "id">) => void;
   removeCourse: (id: string) => void;
@@ -27,6 +35,8 @@ type TaskState = {
 
   setWallpaper: (dataUrl: string) => void;
   clearWallpaper: () => void;
+
+  recordMilestoneClear: (dateKey: string, paletteIndex: number, phraseIndex: number) => void;
 };
 
 export const useTaskStore = create<TaskState>()(
@@ -38,6 +48,7 @@ export const useTaskStore = create<TaskState>()(
       studyBlocks: [],
       hasHydrated: false,
       wallpaperDataUrl: null,
+      milestoneClears: [],
 
       addCourse: (course) =>
         set((s) => ({ courses: [...s.courses, { ...course, id: crypto.randomUUID() }] })),
@@ -84,6 +95,13 @@ export const useTaskStore = create<TaskState>()(
 
       setWallpaper: (dataUrl) => set({ wallpaperDataUrl: dataUrl }),
       clearWallpaper: () => set({ wallpaperDataUrl: null }),
+
+      recordMilestoneClear: (dateKey, paletteIndex, phraseIndex) =>
+        set((s) =>
+          s.milestoneClears.some((c) => c.date === dateKey)
+            ? s
+            : { milestoneClears: [...s.milestoneClears, { date: dateKey, paletteIndex, phraseIndex }] }
+        ),
     }),
     {
       name: "ultimatetaskmanager-storage",
@@ -93,6 +111,7 @@ export const useTaskStore = create<TaskState>()(
         exams: s.exams,
         studyBlocks: s.studyBlocks,
         wallpaperDataUrl: s.wallpaperDataUrl,
+        milestoneClears: s.milestoneClears,
       }),
       onRehydrateStorage: () => (state) => {
         state?.setHasHydrated();

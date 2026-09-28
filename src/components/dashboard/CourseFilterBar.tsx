@@ -3,6 +3,7 @@
 import { AnimatePresence, motion } from "framer-motion";
 import { X } from "lucide-react";
 import { useTaskStore } from "@/store/useTaskStore";
+import { CourseShareButton } from "./CourseShareButton";
 
 export function CourseFilterBar({
   selectedCourseId,
@@ -39,11 +40,12 @@ export function CourseFilterBar({
             <motion.div
               layout
               key={course.id}
-              initial={{ opacity: 0, scale: 0.9 }}
+              initial={{ opacity: 0, scale: 0.96 }}
               animate={{ opacity: 1, scale: 1 }}
-              exit={{ opacity: 0, scale: 0.9 }}
+              exit={{ opacity: 0, scale: 0.96 }}
+              transition={{ duration: 0.15, ease: [0.16, 1, 0.3, 1] }}
               style={{ "--accent": course.color } as React.CSSProperties}
-              className={`group/pill flex shrink-0 items-center gap-1 rounded-full border py-1 pl-1 pr-1 text-xs transition-colors ${
+              className={`group group/pill flex shrink-0 items-center gap-1 rounded-full border py-1 pl-1 pr-1 text-xs transition-colors ${
                 active
                   ? "border-[color:var(--accent)]/50 bg-[color:var(--accent)]/15"
                   : "border-black/10 bg-white/50 hover:bg-white/80"
@@ -59,11 +61,12 @@ export function CourseFilterBar({
                 <span className="h-2 w-2 shrink-0 rounded-full" style={{ backgroundColor: course.color }} />
                 <span className="truncate">{course.name || course.code}</span>
               </button>
+              <CourseShareButton courseId={course.id} />
               <button
                 type="button"
                 onClick={() => removeCourse(course.id)}
                 aria-label={`Remove ${course.code}`}
-                className="rounded-full p-1 text-zinc-400 opacity-0 transition-opacity hover:text-[#DC2626] group-hover/pill:opacity-100"
+                className="rounded-full p-1 text-zinc-400 opacity-100 transition-opacity hover:text-[#DC2626] sm:opacity-0 sm:group-hover/pill:opacity-100"
               >
                 <X className="h-3 w-3" />
               </button>
