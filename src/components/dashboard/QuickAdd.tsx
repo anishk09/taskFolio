@@ -22,7 +22,7 @@ const KIND_TABS: { kind: Kind; label: string; icon: typeof BookOpen }[] = [
   { kind: "assignment", label: "Assignment", icon: ClipboardList },
   { kind: "exam", label: "Exam", icon: CalendarClock },
   { kind: "studyBlock", label: "Study block", icon: Timer },
-  { kind: "canvasSync", label: "Sync Canvas", icon: RefreshCw },
+  { kind: "canvasSync", label: "Sync Institution", icon: RefreshCw },
 ];
 
 const DEFAULT_ASSIGNMENT_WEIGHT = 5;
@@ -40,6 +40,7 @@ export function QuickAdd({ open, onClose }: { open: boolean; onClose: () => void
   const addExam = useTaskStore((s) => s.addExam);
   const addStudyBlock = useTaskStore((s) => s.addStudyBlock);
 
+  const [syncPlatform, setSyncPlatform] = useState<"canvas" | "classroom">("canvas");
   const [syncUrl, setSyncUrl] = useState("");
   const [syncing, setSyncing] = useState(false);
   const [syncStatus, setSyncStatus] = useState<string | null>(null);
@@ -96,13 +97,13 @@ export function QuickAdd({ open, onClose }: { open: boolean; onClose: () => void
       >
         <div className="overflow-hidden" aria-hidden={!open}>
           <div className="rijks-card mt-3 w-full p-5">
-            <div className="mb-4 flex items-center justify-between border-b border-black/10 pb-3">
-              <div className="flex flex-wrap gap-1.5">
+            <div className="mb-4 flex items-center gap-2 border-b border-black/10 pb-3">
+              <div className="no-scrollbar flex min-w-0 flex-1 items-center gap-1.5 overflow-x-auto">
                 {KIND_TABS.map(({ kind: k, label, icon: Icon }) => (
                   <button
                     key={k}
                     onClick={() => setKind(k)}
-                    className={`flex items-center gap-1.5 rounded-full border px-3 py-1.5 text-xs uppercase tracking-wide transition-colors ${
+                    className={`flex shrink-0 items-center gap-1.5 rounded-full border px-3 py-1.5 text-xs uppercase tracking-wide transition-colors ${
                       kind === k
                         ? "border-[#8B7EC8]/35 bg-[#8B7EC8]/15 font-semibold text-[#5D4E9E]"
                         : "border-transparent text-zinc-600 hover:text-zinc-900"
@@ -302,6 +303,22 @@ export function QuickAdd({ open, onClose }: { open: boolean; onClose: () => void
 
             {kind === "canvasSync" && (
               <form className="flex flex-col gap-4" onSubmit={handleSync}>
+                <div className="flex gap-1.5">
+                  {(["canvas", "classroom"] as const).map((p) => (
+                    <button
+                      key={p}
+                      type="button"
+                      onClick={() => setSyncPlatform(p)}
+                      className={`rounded-full border px-3 py-1.5 text-xs font-semibold transition-colors ${
+                        syncPlatform === p
+                          ? "border-[#8B7EC8]/35 bg-[#8B7EC8]/15 text-[#5D4E9E]"
+                          : "border-transparent text-zinc-600 hover:text-zinc-900"
+                      }`}
+                    >
+                      {p === "canvas" ? "Canvas LMS" : "Google Classroom"}
+                    </button>
+                  ))}
+                </div>
                 <div className="flex flex-wrap items-center gap-3">
                   <input
                     name="icsUrl"
@@ -309,7 +326,11 @@ export function QuickAdd({ open, onClose }: { open: boolean; onClose: () => void
                     required
                     value={syncUrl}
                     onChange={(e) => setSyncUrl(e.target.value)}
-                    placeholder="webcal://canvas.example.edu/feeds/calendars/....ics"
+                    placeholder={
+                      syncPlatform === "canvas"
+                        ? "webcal://canvas.example.edu/feeds/calendars/....ics"
+                        : "https://calendar.google.com/calendar/ical/.../public/basic.ics"
+                    }
                     className={`${inputCls} w-96 max-w-full`}
                   />
                   <button className={pillButtonCls} disabled={syncing}>
@@ -317,12 +338,21 @@ export function QuickAdd({ open, onClose }: { open: boolean; onClose: () => void
                   </button>
                 </div>
                 {syncStatus && <p className="text-xs text-zinc-600">{syncStatus}</p>}
-                <p className="text-xs text-zinc-500">
-                  Paste your Canvas calendar feed URL (Account → Settings → Calendar Feed). You&apos;ll get a
-                  checklist of detected courses before anything is imported. Office hours and similar recurring
-                  noise are filtered out automatically; imported assignments land at a flat{" "}
-                  {DEFAULT_ASSIGNMENT_WEIGHT}% weight — edit them afterward if you know the real grade weighting.
-                </p>
+                {syncPlatform === "canvas" ? (
+                  <p className="text-xs text-zinc-500">
+                    Paste your Canvas calendar feed URL (Account → Settings → Calendar Feed). You&apos;ll get a
+                    checklist of detected courses before anything is imported. Office hours and similar recurring
+                    noise are filtered out automatically; imported assignments land at a flat{" "}
+                    {DEFAULT_ASSIGNMENT_WEIGHT}% weight — edit them afterward if you know the real grade weighting.
+                  </p>
+                ) : (
+                  <p className="text-xs text-zinc-500">
+                    In Google Calendar: Settings → Settings for my calendars → pick your Classroom calendar →
+                    Integrate calendar → copy the Public or Secret address in iCal format. You&apos;ll get the same
+                    checklist before anything is imported; imported assignments land at a flat{" "}
+                    {DEFAULT_ASSIGNMENT_WEIGHT}% weight.
+                  </p>
+                )}
                 <div className="flex flex-wrap gap-x-6 gap-y-3 border-t border-black/10 pt-3">
                   <div>
                     <button

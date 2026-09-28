@@ -33,6 +33,45 @@ body {
   display: none;
 }
 
+/* Gold shimmer sweep — export/share buttons on achievement-style cards. */
+@keyframes shimmer-sweep {
+  0% {
+    transform: translateX(-120%) skewX(-20deg);
+  }
+  100% {
+    transform: translateX(220%) skewX(-20deg);
+  }
+}
+.shimmer-sweep {
+  position: relative;
+  overflow: hidden;
+}
+.shimmer-sweep::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  width: 40%;
+  background: linear-gradient(90deg, transparent, rgba(255, 230, 160, 0.55), transparent);
+  animation: shimmer-sweep 2.6s ease-in-out infinite;
+}
+
+/* Gentle radiant bloom behind the milestone award card — slow and smooth,
+   deliberately not Tailwind's default animate-pulse (too abrupt/binary). */
+@keyframes bloom-pulse {
+  0%,
+  100% {
+    opacity: 0.35;
+    transform: scale(1);
+  }
+  50% {
+    opacity: 0.55;
+    transform: scale(1.08);
+  }
+}
+.bloom-pulse {
+  animation: bloom-pulse 4s ease-in-out infinite;
+}
+
 .rijks-card {
   background: rgba(255, 255, 255, 0.72);
   backdrop-filter: blur(24px) saturate(180%);

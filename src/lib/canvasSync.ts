@@ -51,8 +51,22 @@ const LETTER_CODE_TAG_RE = /\[([A-Z]{2,4}\s*\d{3}(?!\d))\s*([^\]]*)\]/;
 const LOOSE_TAG_RE = /\[([A-Za-z0-9][A-Za-z0-9\s:&/.,'-]*)\]/;
 const TERM_LABEL_RE = /\b(fall|spring|summer|winter)\b|\b(19|20)\d{2}\b/i;
 
+// Google Classroom / Google Calendar ICS exports lead each event with the
+// class name in brackets — "[AP Biology] Lab Report 2" — rather than
+// Canvas's trailing "[...]" context tag. Anchored to the very start of the
+// string so it can never collide with a Canvas-style suffix tag (whose
+// assignment title always comes first). No digit requirement: class names
+// are often plain text with no course number at all.
+const GOOGLE_CLASSROOM_LEADING_TAG_RE = /^\[([^\]]+)\]/;
+
 function extractCourseTag(summary: string): { code: string; title: string; matchedText: string } | null {
-  let m = summary.match(DEPT_SUBJ_COURSE_TAG_RE);
+  let m = summary.match(GOOGLE_CLASSROOM_LEADING_TAG_RE);
+  if (m) {
+    const name = m[1].trim();
+    return { code: name, title: name, matchedText: m[0] };
+  }
+
+  m = summary.match(DEPT_SUBJ_COURSE_TAG_RE);
   if (m) return { code: m[1], title: m[2].trim(), matchedText: m[0] };
 
   m = summary.match(LETTER_CODE_TAG_RE);

@@ -6,6 +6,7 @@ import { Trash2 } from "lucide-react";
 import { useTaskStore } from "@/store/useTaskStore";
 import { daysRemaining, priorityScore } from "@/lib/priority";
 import { hexToRgba, PALETTE, urgencyZone, ZONE_STYLE } from "@/lib/palette";
+import { isSameCalendarDay } from "@/lib/date";
 
 // How long a checked-off item lingers (showing the strike-through) before it
 // actually leaves the pending list and the row plays its exit animation.
@@ -59,7 +60,13 @@ function GoldLeafBloom() {
   );
 }
 
-export function PriorityQueue({ filterCourseId = null }: { filterCourseId?: string | null }) {
+export function PriorityQueue({
+  filterCourseId = null,
+  filterDate = null,
+}: {
+  filterCourseId?: string | null;
+  filterDate?: Date | null;
+}) {
   const assignments = useTaskStore((s) => s.assignments);
   const courses = useTaskStore((s) => s.courses);
   const toggleDone = useTaskStore((s) => s.toggleAssignmentDone);
@@ -70,11 +77,18 @@ export function PriorityQueue({ filterCourseId = null }: { filterCourseId?: stri
   const pending = assignments
     .filter((a) => a.status !== "done")
     .filter((a) => !filterCourseId || a.courseId === filterCourseId)
+    .filter((a) => !filterDate || isSameCalendarDay(a.dueDate, filterDate))
     .map((a) => ({ a, course: courses.find((c) => c.id === a.courseId), days: daysRemaining(a.dueDate, now) }))
     .sort((x, y) => priorityScore(y.a, now) - priorityScore(x.a, now));
 
   if (pending.length === 0) {
-    return <p className="text-sm text-zinc-600">Nothing pending — add an assignment to see it prioritized here.</p>;
+    return (
+      <p className="text-sm text-zinc-600">
+        {filterDate
+          ? "Nothing due on this day."
+          : "Nothing pending — add an assignment to see it prioritized here."}
+      </p>
+    );
   }
 
   function complete(id: string) {

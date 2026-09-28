@@ -7,6 +7,7 @@ import { useTaskStore } from "@/store/useTaskStore";
 import { getCountdown } from "@/lib/date";
 import { getClientNow, getServerNow, subscribeToClock } from "@/lib/clock";
 import { GlowRing } from "./GlowRing";
+import { CourseShareButton } from "./CourseShareButton";
 
 // ponytail: no "prep started" timestamp in the data model, so the ring
 // assumes a fixed 21-day study horizon rather than tracking real effort.
@@ -41,13 +42,21 @@ export function ExamCountdowns({ filterCourseId = null }: { filterCourseId?: str
         return (
           <motion.div
             layout
+            transition={{ duration: 0.25, ease: [0.16, 1, 0.3, 1] }}
             key={exam.id}
             className="rijks-card group relative flex w-44 flex-col items-center gap-2 p-4"
           >
-            <span
-              className="h-1.5 w-1.5 shrink-0 self-start rounded-full"
-              style={{ backgroundColor: course?.color ?? "#5B4FA8" }}
-            />
+            <div className="flex w-full items-center justify-between">
+              <span
+                className="h-1.5 w-1.5 shrink-0 rounded-full"
+                style={{ backgroundColor: course?.color ?? "#5B4FA8" }}
+              />
+              {course && (
+                <div className="absolute right-8 top-1.5">
+                  <CourseShareButton courseId={course.id} />
+                </div>
+              )}
+            </div>
             <p className="w-full truncate text-center text-sm font-semibold text-zinc-600">{course?.code ?? "?"}</p>
             <p className="w-full truncate text-center text-base font-bold text-zinc-900">{exam.title}</p>
 
