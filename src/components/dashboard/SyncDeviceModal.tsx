@@ -2,11 +2,12 @@
 
 import { useEffect, useState } from "react";
 import { QRCodeSVG } from "qrcode.react";
-import { Check, Copy, X } from "lucide-react";
-import { pushVaultToCloud } from "@/store/useTaskStore";
+import { Check, Copy, RefreshCw, X } from "lucide-react";
+import { pushVaultToCloud, regenerateSyncKey } from "@/store/useTaskStore";
 
 export function SyncDeviceModal({ syncKey, onClose }: { syncKey: string; onClose: () => void }) {
   const [copied, setCopied] = useState(false);
+  const [resetting, setResetting] = useState(false);
 
   // The debounced auto-sync in the store only fires on a state *change*, so
   // a device that hasn't mutated anything since generating its syncKey would
@@ -26,6 +27,15 @@ export function SyncDeviceModal({ syncKey, onClose }: { syncKey: string; onClose
     } catch {
       // clipboard access denied — the link is still visible for manual copy
     }
+  }
+
+  async function handleReset() {
+    if (!window.confirm("Reset your sync key? Any device using the old QR code or link will lose access.")) {
+      return;
+    }
+    setResetting(true);
+    await regenerateSyncKey();
+    setResetting(false);
   }
 
   return (
@@ -64,6 +74,15 @@ export function SyncDeviceModal({ syncKey, onClose }: { syncKey: string; onClose
               <Copy className="h-3.5 w-3.5" /> Copy Link
             </>
           )}
+        </button>
+
+        <button
+          onClick={handleReset}
+          disabled={resetting}
+          className="flex items-center gap-1.5 text-[11px] font-semibold text-zinc-500 transition-colors hover:text-[#DC2626] disabled:cursor-not-allowed disabled:opacity-50"
+        >
+          <RefreshCw className={`h-3 w-3 ${resetting ? "animate-spin" : ""}`} />
+          {resetting ? "Resetting…" : "Reset Sync Key"}
         </button>
       </div>
     </div>

@@ -308,7 +308,7 @@ export default function Home() {
 
       {roadmapOpen && (
         <ExportCardModal onClose={() => setRoadmapOpen(false)} filename="taskfolio-semester-roadmap">
-          <SemesterRoadmapCard courses={courses} assignments={assignments} exams={exams} />
+          <SemesterRoadmapCard courses={courses} exams={exams} />
         </ExportCardModal>
       )}
 

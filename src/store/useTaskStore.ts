@@ -224,6 +224,19 @@ export function pushVaultToCloud(): Promise<void> {
     .catch(() => undefined);
 }
 
+// Lets a device cut off a leaked/compromised sync key: the old key's cloud
+// record is deleted (so anyone still holding it gets a 404), a fresh key is
+// generated and adopted immediately, and the current state is pushed to it
+// right away so the new key is usable without waiting on the next mutation.
+export async function regenerateSyncKey(): Promise<void> {
+  const oldKey = useTaskStore.getState().syncKey;
+  useTaskStore.setState({ syncKey: generateSyncKey() });
+  if (oldKey) {
+    fetch(`/api/sync/${oldKey}`, { method: "DELETE" }).catch(() => {});
+  }
+  await pushVaultToCloud();
+}
+
 // Auto-sync: any change to the vault-relevant slices gets pushed to the
 // cloud after a 1.5s debounce so rapid edits (e.g. checking off several
 // items) collapse into one request instead of one per mutation.

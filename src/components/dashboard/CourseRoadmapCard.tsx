@@ -1,5 +1,5 @@
 import { Star } from "lucide-react";
-import type { Assignment, Course, Exam } from "@/types";
+import type { Course, Exam } from "@/types";
 import { getCountdown } from "@/lib/date";
 import { hexToRgba } from "@/lib/palette";
 
@@ -17,44 +17,26 @@ const CONSTELLATION_STARS = [
   { left: 90, top: 15, size: 7 },
 ];
 
-type RoadmapItem = {
-  id: string;
-  title: string;
-  when: string;
-  kind: "exam" | "assignment";
-  courseId: string;
-  weightPct?: number;
-};
+type RoadmapItem = { id: string; title: string; when: string; courseId: string };
 
 const MAX_VISIBLE_ITEMS = 6;
 
-// Exports the whole semester (every enrolled course + its upcoming
-// assignments/exams) as one card, styled to match ClearedMilestoneCard's
-// bright gamification-card aesthetic rather than the old per-course dark card.
+// Exports the whole semester (every enrolled course + its upcoming exams)
+// as one card, styled to match ClearedMilestoneCard's bright
+// gamification-card aesthetic rather than the old per-course dark card.
+// Assignments are deliberately left out — this is a courses/exams overview,
+// not a task list (that's what the Priority Queue is for).
 export function SemesterRoadmapCard({
   courses,
-  assignments,
   exams,
   now = new Date(),
 }: {
   courses: Course[];
-  assignments: Assignment[];
   exams: Exam[];
   now?: Date;
 }) {
-  const items: RoadmapItem[] = [
-    ...exams.map((e) => ({ id: e.id, title: e.title, when: e.date, kind: "exam" as const, courseId: e.courseId })),
-    ...assignments
-      .filter((a) => a.status !== "done")
-      .map((a) => ({
-        id: a.id,
-        title: a.title,
-        when: a.dueDate,
-        kind: "assignment" as const,
-        courseId: a.courseId,
-        weightPct: a.weightPct,
-      })),
-  ]
+  const items: RoadmapItem[] = exams
+    .map((e) => ({ id: e.id, title: e.title, when: e.date, courseId: e.courseId }))
     .filter((item) => new Date(item.when).getTime() >= now.getTime())
     .sort((a, b) => new Date(a.when).getTime() - new Date(b.when).getTime());
 
@@ -131,8 +113,7 @@ export function SemesterRoadmapCard({
                 <div className="min-w-0">
                   <p className="truncate text-xs font-semibold text-[#5D4E9E]">{item.title}</p>
                   <p className="truncate text-[10px] uppercase tracking-wide text-neutral-500">
-                    {course?.name || course?.code || "Unknown"} ·{" "}
-                    {item.kind === "exam" ? "Exam" : `${item.weightPct}% of grade`}
+                    {course?.name || course?.code || "Unknown"} · Exam
                   </p>
                 </div>
                 <span className="shrink-0 rounded-full bg-[#5D4E9E] px-2.5 py-1 text-[11px] font-bold text-white">
