@@ -1,9 +1,9 @@
 "use client";
 
 import { useRef, useState } from "react";
-import { BookOpen, CalendarClock, CheckSquare, ClipboardList, RefreshCw, Timer, X } from "lucide-react";
+import { BookOpen, CalendarClock, CheckSquare, ClipboardList, RefreshCw, Timer, Users, X } from "lucide-react";
 import { useTaskStore } from "@/store/useTaskStore";
-import { DAY_LABELS } from "@/lib/date";
+import { DAY_LABELS, localDateKey } from "@/lib/date";
 import { ACCENT_PRESETS, PALETTE } from "@/lib/palette";
 import {
   clearAllCourses,
@@ -15,7 +15,7 @@ import {
 } from "@/lib/canvasSync";
 import { CanvasImportModal } from "./CanvasImportModal";
 
-type Kind = "course" | "assignment" | "exam" | "studyBlock" | "todo" | "canvasSync";
+type Kind = "course" | "assignment" | "exam" | "studyBlock" | "todo" | "meeting" | "canvasSync";
 
 const KIND_TABS: { kind: Kind; label: string; icon: typeof BookOpen }[] = [
   { kind: "course", label: "Course", icon: BookOpen },
@@ -23,6 +23,7 @@ const KIND_TABS: { kind: Kind; label: string; icon: typeof BookOpen }[] = [
   { kind: "exam", label: "Exam", icon: CalendarClock },
   { kind: "studyBlock", label: "Study block", icon: Timer },
   { kind: "todo", label: "To-Do Item", icon: CheckSquare },
+  { kind: "meeting", label: "Meeting / Event", icon: Users },
   { kind: "canvasSync", label: "Sync Institution", icon: RefreshCw },
 ];
 
@@ -41,6 +42,7 @@ export function QuickAdd({ open, onClose }: { open: boolean; onClose: () => void
   const addExam = useTaskStore((s) => s.addExam);
   const addStudyBlock = useTaskStore((s) => s.addStudyBlock);
   const addTodo = useTaskStore((s) => s.addTodo);
+  const addMeeting = useTaskStore((s) => s.addMeeting);
 
   const [syncPlatform, setSyncPlatform] = useState<"canvas" | "classroom">("canvas");
   const [syncUrl, setSyncUrl] = useState("");
@@ -325,6 +327,50 @@ export function QuickAdd({ open, onClose }: { open: boolean; onClose: () => void
                 </div>
                 <div className="flex justify-end">
                   <button className={pillButtonCls}>Add To-Do</button>
+                </div>
+              </form>
+            )}
+
+            {kind === "meeting" && (
+              <form
+                className="flex flex-col gap-4"
+                onSubmit={(e) => {
+                  e.preventDefault();
+                  const f = new FormData(e.currentTarget);
+                  const title = String(f.get("title") || "").trim();
+                  if (!title) return;
+                  addMeeting({
+                    title,
+                    date: String(f.get("date")),
+                    start: String(f.get("start")),
+                    end: String(f.get("end") || "") || undefined,
+                    location: String(f.get("location") || "").trim() || undefined,
+                    repeatsWeekly: f.get("repeatsWeekly") === "on",
+                  });
+                  e.currentTarget.reset();
+                  onClose();
+                }}
+              >
+                <div className="flex flex-wrap items-center gap-3">
+                  <input name="title" required placeholder="e.g. Robotics club meeting" className={`${inputCls} w-64`} />
+                  <input
+                    name="date"
+                    type="date"
+                    required
+                    defaultValue={localDateKey(new Date())}
+                    title="Date"
+                    className={`${inputCls} w-40`}
+                  />
+                  <input name="start" type="time" required title="Start time" className={`${inputCls} w-28`} />
+                  <input name="end" type="time" title="End time (optional)" className={`${inputCls} w-28`} />
+                  <input name="location" placeholder="Location (optional)" className={`${inputCls} w-48`} />
+                  <label className="flex items-center gap-2 text-xs font-medium text-zinc-700">
+                    <input name="repeatsWeekly" type="checkbox" className="h-4 w-4 accent-[#8B7EC8]" />
+                    Repeats weekly
+                  </label>
+                </div>
+                <div className="flex justify-end">
+                  <button className={pillButtonCls}>Add Meeting</button>
                 </div>
               </form>
             )}

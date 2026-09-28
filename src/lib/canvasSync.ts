@@ -185,6 +185,11 @@ export function groupByCourse(events: ParsedCanvasEvent[]): DetectedCourseGroup[
         events: [],
       };
       groups.set(key, group);
+    } else if (group.name === group.code && event.courseName && event.courseName !== event.courseCode) {
+      // parseIcs falls back to the code when a tag has no title text, so a
+      // bare-code event seen first would otherwise pin the course's name to
+      // its code even though later events carry the real title.
+      group.name = event.courseName;
     }
     group.events.push(event);
   }
@@ -236,10 +241,34 @@ export function ingestSelectedGroups(groups: DetectedCourseGroup[]): { imported:
       skipped += group.events.length;
       continue;
     }
+    // Heal courses imported before names were resolved properly: still named
+    // after their own code, but this feed now knows the real title.
+    if ((!course.name || course.name === course.code) && group.name && group.name !== group.code) {
+      useTaskStore.getState().updateCourse(course.id, { name: group.name });
+    }
     for (const event of group.events) {
+      // Re-syncing the same feed must be a no-op for anything already here.
+      // Without this, a finished assignment gets a fresh not-done twin on every
+      // re-import, and since it's past due the twin shows up as OVERDUE.
+      const { assignments, exams } = useTaskStore.getState();
+      const when = new Date(event.dueDate).getTime();
+      const title = event.title.trim().toLowerCase();
+      const sameEvent = (item: { courseId: string; title: string }, itemWhen: string) =>
+        item.courseId === course.id &&
+        item.title.trim().toLowerCase() === title &&
+        new Date(itemWhen).getTime() === when;
+
       if (isExamTitle(event.title)) {
+        if (exams.some((e) => sameEvent(e, e.date))) {
+          skipped++;
+          continue;
+        }
         addExam({ courseId: course.id, title: event.title, date: event.dueDate });
       } else {
+        if (assignments.some((a) => sameEvent(a, a.dueDate))) {
+          skipped++;
+          continue;
+        }
         addAssignment({ courseId: course.id, title: event.title, dueDate: event.dueDate, weightPct: 5 });
       }
       imported++;

@@ -1,10 +1,13 @@
 "use client";
 
 import { useState } from "react";
-import { AnimatePresence, motion } from "framer-motion";
-import { Trash2 } from "lucide-react";
+import { AnimatePresence, motion, Reorder } from "framer-motion";
+import { Pencil, Trash2 } from "lucide-react";
 import { useTaskStore } from "@/store/useTaskStore";
-import { daysRemaining, priorityScore } from "@/lib/priority";
+import { EditAssignmentModal } from "./EditAssignmentModal";
+import { DragHandle, ReorderableItem } from "./ReorderableItem";
+import { daysRemaining } from "@/lib/priority";
+import { mergeSubsetOrder, sortPending } from "@/lib/queueOrder";
 import { hexToRgba, PALETTE, urgencyZone, ZONE_STYLE } from "@/lib/palette";
 import { isSameCalendarDay } from "@/lib/date";
 
@@ -71,15 +74,25 @@ export function PriorityQueue({
   const courses = useTaskStore((s) => s.courses);
   const toggleDone = useTaskStore((s) => s.toggleAssignmentDone);
   const removeAssignment = useTaskStore((s) => s.removeAssignment);
+  const queueOrder = useTaskStore((s) => s.queueOrder);
+  const setQueueOrder = useTaskStore((s) => s.setQueueOrder);
+  const resetQueueOrder = useTaskStore((s) => s.resetQueueOrder);
   const [completingId, setCompletingId] = useState<string | null>(null);
+  const [editingId, setEditingId] = useState<string | null>(null);
+  const editing = assignments.find((a) => a.id === editingId) ?? null;
 
   const now = new Date();
-  const pending = assignments
-    .filter((a) => a.status !== "done")
+  // Order the full pending list first (so a filtered view can be merged back
+  // into it on drag), then narrow to whatever the course/date filters show.
+  const allPending = sortPending(
+    assignments.filter((a) => a.status !== "done"),
+    queueOrder,
+    now
+  );
+  const pending = allPending
     .filter((a) => !filterCourseId || a.courseId === filterCourseId)
     .filter((a) => !filterDate || isSameCalendarDay(a.dueDate, filterDate))
-    .map((a) => ({ a, course: courses.find((c) => c.id === a.courseId), days: daysRemaining(a.dueDate, now) }))
-    .sort((x, y) => priorityScore(y.a, now) - priorityScore(x.a, now));
+    .map((a) => ({ a, course: courses.find((c) => c.id === a.courseId), days: daysRemaining(a.dueDate, now) }));
 
   if (pending.length === 0) {
     return (
@@ -99,8 +112,22 @@ export function PriorityQueue({
     }, COMPLETE_LINGER_MS);
   }
 
+  function handleReorder(visibleIds: string[]) {
+    setQueueOrder(mergeSubsetOrder(allPending.map((a) => a.id), visibleIds));
+  }
+
   return (
-    <ul className="flex flex-col gap-2.5">
+    <>
+    {editing && <EditAssignmentModal assignment={editing} onClose={() => setEditingId(null)} />}
+    {queueOrder && (
+      <div className="mb-2.5 flex items-center justify-between text-[11px] text-zinc-500">
+        <span>Custom order</span>
+        <button onClick={resetQueueOrder} className="font-semibold text-[#5D4E9E] hover:underline">
+          Reset to priority order
+        </button>
+      </div>
+    )}
+    <Reorder.Group axis="y" values={pending.map(({ a }) => a.id)} onReorder={handleReorder} className="flex flex-col gap-2.5">
       <AnimatePresence initial={false}>
         {pending.map(({ a, course, days }, i) => {
           const zone = urgencyZone(days);
@@ -108,13 +135,9 @@ export function PriorityQueue({
           const accent = course?.color ?? PALETTE.gold;
           const completing = completingId === a.id;
           return (
-            <motion.li
-              layout
-              key={a.id}
-              initial={{ opacity: 0, y: 4 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: -4, transition: { duration: 0.18, ease: "easeOut" } }}
-              transition={{ duration: 0.18, delay: i * 0.03, ease: "easeOut" }}
+            <ReorderableItem key={a.id} value={a.id} index={i}>
+              {(controls) => (
+            <motion.div
               drag="x"
               dragConstraints={{ left: 0, right: 0 }}
               dragElastic={0.5}
@@ -122,11 +145,12 @@ export function PriorityQueue({
                 if (info.offset.x > 120) complete(a.id);
               }}
               style={{ "--accent": accent } as React.CSSProperties}
-              className="group relative flex cursor-grab flex-col gap-2 rounded-xl border border-black/10 bg-white/70 px-4 py-3.5 backdrop-blur-xl transition-[box-shadow,border-color] duration-150 ease-[cubic-bezier(0.2,0,0,1)] hover:border-[color:var(--accent)]/40 hover:shadow-[0_0_28px_-10px_var(--accent)] active:cursor-grabbing"
+              className="group relative flex flex-col gap-2 rounded-xl border border-black/10 bg-white/70 px-4 py-3.5 backdrop-blur-xl transition-[box-shadow,border-color] duration-150 ease-[cubic-bezier(0.2,0,0,1)] hover:border-[color:var(--accent)]/40 hover:shadow-[0_0_28px_-10px_var(--accent)]"
             >
               <AnimatePresence>{completing && <GoldLeafBloom />}</AnimatePresence>
 
               <div className="flex items-center gap-3">
+                <DragHandle controls={controls} label={`Reorder ${a.title}`} />
                 <input
                   type="checkbox"
                   aria-label={`Mark ${a.title} done`}
@@ -146,11 +170,11 @@ export function PriorityQueue({
                   className="shrink-0 rounded-full px-2.5 py-1 text-xs font-bold"
                   style={{ backgroundColor: style.bg, color: style.fg }}
                 >
-                  {days < 0 ? "OVERDUE" : `${Math.ceil(days)}D`}
+                  {completing ? "DONE" : days < 0 ? "OVERDUE" : `${Math.ceil(days)}D`}
                 </span>
               </div>
 
-              <div className="flex items-center justify-between gap-2 pl-8">
+              <div className="flex items-center justify-between gap-2 pl-[62px]">
                 <div className="flex min-w-0 flex-wrap items-center gap-2">
                   <span
                     className="inline-flex shrink-0 items-center gap-1 truncate rounded-full px-2 py-0.5 text-[11px] font-semibold"
@@ -162,18 +186,30 @@ export function PriorityQueue({
                   <span className="shrink-0 whitespace-nowrap text-xs text-zinc-600">{a.weightPct}% of grade</span>
                 </div>
 
-                <button
-                  onClick={() => removeAssignment(a.id)}
-                  aria-label={`Delete ${a.title}`}
-                  className="shrink-0 rounded-full p-1 text-zinc-400 opacity-100 transition-opacity hover:bg-black/5 hover:text-[#DC2626] sm:opacity-0 sm:group-hover:opacity-100"
-                >
-                  <Trash2 className="h-3.5 w-3.5" />
-                </button>
+                <div className="flex shrink-0 items-center gap-0.5">
+                  <button
+                    onClick={() => setEditingId(a.id)}
+                    aria-label={`Edit ${a.title}`}
+                    className="rounded-full p-1 text-zinc-400 opacity-100 transition-opacity hover:bg-black/5 hover:text-[#5D4E9E] sm:opacity-0 sm:group-hover:opacity-100"
+                  >
+                    <Pencil className="h-3.5 w-3.5" />
+                  </button>
+                  <button
+                    onClick={() => removeAssignment(a.id)}
+                    aria-label={`Delete ${a.title}`}
+                    className="rounded-full p-1 text-zinc-400 opacity-100 transition-opacity hover:bg-black/5 hover:text-[#DC2626] sm:opacity-0 sm:group-hover:opacity-100"
+                  >
+                    <Trash2 className="h-3.5 w-3.5" />
+                  </button>
+                </div>
               </div>
-            </motion.li>
+            </motion.div>
+              )}
+            </ReorderableItem>
           );
         })}
       </AnimatePresence>
-    </ul>
+    </Reorder.Group>
+    </>
   );
 }

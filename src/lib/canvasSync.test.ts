@@ -1,6 +1,7 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import { groupByCourse, isExamTitle, isNoiseTitle, parseIcs } from "./canvasSync";
+import { groupByCourse, ingestSelectedGroups, isExamTitle, isNoiseTitle, parseIcs } from "./canvasSync";
+import { useTaskStore } from "@/store/useTaskStore";
 
 function vevent(lines: string[]): string {
   return ["BEGIN:VEVENT", ...lines, "END:VEVENT"].join("\r\n");
@@ -96,4 +97,61 @@ test("isNoiseTitle matches office-hour style recurring events", () => {
   assert.equal(isNoiseTitle("TA Office Hour"), true);
   assert.equal(isNoiseTitle("Drop-in advising"), true);
   assert.equal(isNoiseTitle("Problem Set 3"), false);
+});
+
+test("ingestSelectedGroups is idempotent: re-importing never resurrects a finished assignment", () => {
+  useTaskStore.setState({ courses: [], assignments: [], exams: [] });
+  const group = {
+    key: "42",
+    code: "CS 101",
+    name: "Intro",
+    canvasCourseId: "42",
+    events: [
+      { title: "Homework 1", courseCode: "CS 101", courseName: "Intro", canvasCourseId: "42", dueDate: "2026-01-05T23:59:00.000Z" },
+      { title: "Midterm", courseCode: "CS 101", courseName: "Intro", canvasCourseId: "42", dueDate: "2026-01-10T15:00:00.000Z" },
+    ],
+  };
+
+  const first = ingestSelectedGroups([group]);
+  assert.equal(first.imported, 2);
+
+  const { assignments, toggleAssignmentDone } = useTaskStore.getState();
+  toggleAssignmentDone(assignments[0].id);
+
+  const second = ingestSelectedGroups([group]);
+  assert.equal(second.imported, 0);
+  assert.equal(second.skipped, 2);
+
+  const after = useTaskStore.getState();
+  assert.equal(after.assignments.length, 1);
+  assert.equal(after.assignments[0].status, "done");
+  assert.equal(after.exams.length, 1);
+});
+
+test("groupByCourse upgrades a code-only name when a later event carries the real course title", () => {
+  const ev = (courseName: string) => ({
+    title: "x",
+    courseCode: "01:198:142",
+    courseName,
+    canvasCourseId: "7",
+    dueDate: "2026-01-05T00:00:00.000Z",
+  });
+  // parseIcs falls back to the code when a tag has no title text
+  const [group] = groupByCourse([ev("01:198:142"), ev("INTRO COMPUTER SCI")]);
+  assert.equal(group.name, "INTRO COMPUTER SCI");
+});
+
+test("re-importing heals an existing course still named after its own code", () => {
+  useTaskStore.setState({ courses: [], assignments: [], exams: [] });
+  const mk = (name: string) => ({
+    key: "9",
+    code: "37:575:100",
+    name,
+    canvasCourseId: "9",
+    events: [{ title: "Quiz 1", courseCode: "37:575:100", courseName: name, canvasCourseId: "9", dueDate: "2026-02-01T00:00:00.000Z" }],
+  });
+  ingestSelectedGroups([mk("37:575:100")]);
+  assert.equal(useTaskStore.getState().courses[0].name, "37:575:100");
+  ingestSelectedGroups([mk("LABOR & EMPLOYMENT")]);
+  assert.equal(useTaskStore.getState().courses[0].name, "LABOR & EMPLOYMENT");
 });

@@ -1,11 +1,12 @@
 "use client";
 
 import { useState, useSyncExternalStore } from "react";
-import { AnimatePresence, motion } from "framer-motion";
+import { AnimatePresence, motion, Reorder } from "framer-motion";
 import { Trash2 } from "lucide-react";
 import { useTaskStore } from "@/store/useTaskStore";
 import { playGlassChime } from "@/lib/chime";
 import { getClientNow, getServerNow, subscribeToClock } from "@/lib/clock";
+import { DragHandle, ReorderableItem } from "./ReorderableItem";
 
 // How long a checked-off item lingers (strike-through + shimmer) before it
 // actually leaves the pending list and plays its exit animation.
@@ -44,7 +45,7 @@ function formatDueLabel(dueDate: string, dueTime: string | undefined, nowMs: num
 function RippleBurst() {
   return (
     <motion.span
-      className="pointer-events-none absolute left-3.5 top-1/2 h-5 w-5 -translate-y-1/2 rounded-full border-2 border-[#D9B454]"
+      className="pointer-events-none absolute left-[44px] top-1/2 h-5 w-5 -translate-y-1/2 rounded-full border-2 border-[#D9B454]"
       initial={{ scale: 0.4, opacity: 0.8 }}
       animate={{ scale: 3.2, opacity: 0 }}
       transition={{ duration: 0.55, ease: "easeOut" }}
@@ -56,6 +57,7 @@ export function TodoList() {
   const todos = useTaskStore((s) => s.todos);
   const toggleTodoDone = useTaskStore((s) => s.toggleTodoDone);
   const removeTodo = useTaskStore((s) => s.removeTodo);
+  const reorderTodos = useTaskStore((s) => s.reorderTodos);
   const [completingId, setCompletingId] = useState<string | null>(null);
   const nowMs = useSyncExternalStore(subscribeToClock, getClientNow, getServerNow);
 
@@ -75,24 +77,31 @@ export function TodoList() {
   }
 
   return (
-    <ul className="flex flex-col gap-2">
+    <Reorder.Group axis="y" values={pending.map((t) => t.id)} onReorder={reorderTodos} className="flex flex-col gap-2">
       <AnimatePresence initial={false}>
         {pending.map((t) => {
           const completing = completingId === t.id;
           const overdue = !completing && !!t.dueDate && nowMs > 0 && dueDateTime(t.dueDate, t.dueTime).getTime() < nowMs;
           return (
-            <motion.li
-              layout
+            <ReorderableItem
               key={t.id}
-              initial={{ opacity: 0, y: -12, scale: 0.95 }}
-              animate={{ opacity: 1, y: 0, scale: 1 }}
-              exit={{ opacity: 0, x: 20, scale: 0.92, rotate: 5, transition: { duration: 0.22, ease: "easeIn" } }}
-              transition={{ type: "spring", stiffness: 500, damping: 32 }}
+              value={t.id}
+              index={0}
+              motionProps={{
+                initial: { opacity: 0, y: -12, scale: 0.95 },
+                animate: { opacity: 1, y: 0, scale: 1 },
+                exit: { opacity: 0, x: 20, scale: 0.92, rotate: 5, transition: { duration: 0.22, ease: "easeIn" } },
+                transition: { type: "spring", stiffness: 500, damping: 32 },
+              }}
+            >
+              {(controls) => (
+            <div
               className={`group relative flex items-center gap-3 overflow-hidden rounded-xl border border-black/10 bg-white/70 px-3.5 py-2.5 backdrop-blur-xl transition-colors hover:border-[#8B7EC8]/40 ${
                 completing ? "golden-wave-sweep" : ""
               }`}
             >
               <AnimatePresence>{completing && <RippleBurst />}</AnimatePresence>
+              <DragHandle controls={controls} label={`Reorder ${t.title}`} />
               <input
                 type="checkbox"
                 aria-label={`Mark ${t.title} done`}
@@ -125,10 +134,12 @@ export function TodoList() {
               >
                 <Trash2 className="h-3.5 w-3.5" />
               </button>
-            </motion.li>
+            </div>
+              )}
+            </ReorderableItem>
           );
         })}
       </AnimatePresence>
-    </ul>
+    </Reorder.Group>
   );
 }

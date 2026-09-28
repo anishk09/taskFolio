@@ -1,7 +1,7 @@
 import { create } from "zustand";
 import { persist } from "zustand/middleware";
 import { customAlphabet } from "nanoid";
-import type { Assignment, Course, Exam, StudyBlock, Todo } from "@/types";
+import type { Assignment, Course, Exam, Meeting, StudyBlock, Todo } from "@/types";
 
 const SYNC_KEY_ALPHABET = "0123456789abcdefghijklmnopqrstuvwxyz";
 const nanoid12 = customAlphabet(SYNC_KEY_ALPHABET, 12);
@@ -21,7 +21,9 @@ export type VaultPayload = {
   exams?: Exam[];
   studyBlocks?: StudyBlock[];
   todos?: Todo[];
+  meetings?: Meeting[];
   milestoneClears?: MilestoneClear[];
+  queueOrder?: string[] | null;
 };
 
 type TaskState = {
@@ -30,6 +32,7 @@ type TaskState = {
   exams: Exam[];
   studyBlocks: StudyBlock[];
   todos: Todo[];
+  meetings: Meeting[];
   hasHydrated: boolean;
   wallpaperDataUrl: string | null;
   // One entry per distinct "YYYY-MM-DD" day every task was cleared, each
@@ -44,13 +47,20 @@ type TaskState = {
   // persisted, or replaced with another device's key after a QR pairing
   // hydration so both devices thereafter sync to the same cloud record.
   syncKey: string | null;
+  // Manual Priority Queue ranking (assignment ids). null = auto priority sort.
+  queueOrder: string[] | null;
 
   addCourse: (course: Omit<Course, "id">) => void;
   removeCourse: (id: string) => void;
+  updateCourse: (id: string, patch: Partial<Pick<Course, "name" | "code" | "professor" | "color">>) => void;
 
   addAssignment: (assignment: Omit<Assignment, "id" | "status">) => void;
   removeAssignment: (id: string) => void;
   toggleAssignmentDone: (id: string) => void;
+  updateAssignment: (
+    id: string,
+    patch: Partial<Pick<Assignment, "title" | "courseId" | "dueDate" | "weightPct">>
+  ) => void;
 
   addExam: (exam: Omit<Exam, "id">) => void;
   removeExam: (id: string) => void;
@@ -58,9 +68,16 @@ type TaskState = {
   addStudyBlock: (block: Omit<StudyBlock, "id">) => void;
   removeStudyBlock: (id: string) => void;
 
+  addMeeting: (meeting: Omit<Meeting, "id">) => void;
+  removeMeeting: (id: string) => void;
+
+  setQueueOrder: (ids: string[]) => void;
+  resetQueueOrder: () => void;
+
   addTodo: (title: string, dueDate?: string, dueTime?: string) => void;
   removeTodo: (id: string) => void;
   toggleTodoDone: (id: string) => void;
+  reorderTodos: (pendingIds: string[]) => void;
 
   setHasHydrated: () => void;
 
@@ -83,13 +100,17 @@ export const useTaskStore = create<TaskState>()(
       exams: [],
       studyBlocks: [],
       todos: [],
+      meetings: [],
       hasHydrated: false,
       wallpaperDataUrl: null,
       milestoneClears: [],
       syncKey: null,
+      queueOrder: null,
 
       addCourse: (course) =>
         set((s) => ({ courses: [...s.courses, { ...course, id: crypto.randomUUID() }] })),
+      updateCourse: (id, patch) =>
+        set((s) => ({ courses: s.courses.map((c) => (c.id === id ? { ...c, ...patch } : c)) })),
       removeCourse: (id) =>
         set((s) => ({
           courses: s.courses.filter((c) => c.id !== id),
@@ -118,6 +139,9 @@ export const useTaskStore = create<TaskState>()(
           ),
         })),
 
+      updateAssignment: (id, patch) =>
+        set((s) => ({ assignments: s.assignments.map((a) => (a.id === id ? { ...a, ...patch } : a)) })),
+
       addExam: (exam) =>
         set((s) => ({ exams: [...s.exams, { ...exam, id: crypto.randomUUID() }] })),
       removeExam: (id) => set((s) => ({ exams: s.exams.filter((e) => e.id !== id) })),
@@ -129,6 +153,13 @@ export const useTaskStore = create<TaskState>()(
       removeStudyBlock: (id) =>
         set((s) => ({ studyBlocks: s.studyBlocks.filter((b) => b.id !== id) })),
 
+      addMeeting: (meeting) =>
+        set((s) => ({ meetings: [...s.meetings, { ...meeting, id: crypto.randomUUID() }] })),
+      removeMeeting: (id) => set((s) => ({ meetings: s.meetings.filter((m) => m.id !== id) })),
+
+      setQueueOrder: (ids) => set({ queueOrder: ids }),
+      resetQueueOrder: () => set({ queueOrder: null }),
+
       addTodo: (title, dueDate, dueTime) =>
         set((s) => ({
           todos: [
@@ -139,6 +170,15 @@ export const useTaskStore = create<TaskState>()(
       removeTodo: (id) => set((s) => ({ todos: s.todos.filter((t) => t.id !== id) })),
       toggleTodoDone: (id) =>
         set((s) => ({ todos: s.todos.map((t) => (t.id === id ? { ...t, done: !t.done } : t)) })),
+      // Only pending todos are visible/draggable, so the new pending order is
+      // laid down first and completed (hidden) ones ride behind it.
+      reorderTodos: (pendingIds) =>
+        set((s) => {
+          const byId = new Map(s.todos.map((t) => [t.id, t]));
+          const ordered = pendingIds.map((id) => byId.get(id)).filter((t): t is Todo => !!t);
+          const rest = s.todos.filter((t) => !pendingIds.includes(t.id));
+          return { todos: [...ordered, ...rest] };
+        }),
 
       setHasHydrated: () => set({ hasHydrated: true }),
 
@@ -159,7 +199,9 @@ export const useTaskStore = create<TaskState>()(
           exams: payload.exams ?? [],
           studyBlocks: payload.studyBlocks ?? [],
           todos: payload.todos ?? [],
+          meetings: payload.meetings ?? [],
           milestoneClears: payload.milestoneClears ?? [],
+          queueOrder: payload.queueOrder ?? null,
           syncKey,
         })),
 
@@ -176,7 +218,9 @@ export const useTaskStore = create<TaskState>()(
           exams: [],
           studyBlocks: [],
           todos: [],
+          meetings: [],
           milestoneClears: [],
+          queueOrder: null,
           wallpaperDataUrl: null,
         }),
     }),
@@ -188,9 +232,11 @@ export const useTaskStore = create<TaskState>()(
         exams: s.exams,
         studyBlocks: s.studyBlocks,
         todos: s.todos,
+        meetings: s.meetings,
         wallpaperDataUrl: s.wallpaperDataUrl,
         milestoneClears: s.milestoneClears,
         syncKey: s.syncKey,
+        queueOrder: s.queueOrder,
       }),
       onRehydrateStorage: () => (state) => {
         state?.setHasHydrated();
@@ -213,7 +259,9 @@ export function pushVaultToCloud(): Promise<void> {
     exams: s.exams,
     studyBlocks: s.studyBlocks,
     todos: s.todos,
+    meetings: s.meetings,
     milestoneClears: s.milestoneClears,
+    queueOrder: s.queueOrder,
   };
   return fetch(`/api/sync/${s.syncKey}`, {
     method: "POST",
@@ -250,7 +298,9 @@ if (typeof window !== "undefined") {
       state.exams !== prev.exams ||
       state.studyBlocks !== prev.studyBlocks ||
       state.todos !== prev.todos ||
-      state.milestoneClears !== prev.milestoneClears;
+      state.meetings !== prev.meetings ||
+      state.milestoneClears !== prev.milestoneClears ||
+      state.queueOrder !== prev.queueOrder;
     if (!changed) return;
 
     if (syncTimer) clearTimeout(syncTimer);
