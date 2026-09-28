@@ -71,6 +71,8 @@ type TaskState = {
 
   hydrateFromRemote: (payload: VaultPayload, syncKey: string) => void;
   ensureSyncKey: () => void;
+
+  clearAllData: () => void;
 };
 
 export const useTaskStore = create<TaskState>()(
@@ -164,6 +166,19 @@ export const useTaskStore = create<TaskState>()(
       // Idempotent: a no-op once a key exists, so it's safe to call
       // unconditionally from a mount effect regardless of render timing.
       ensureSyncKey: () => set((s) => (s.syncKey ? s : { syncKey: generateSyncKey() })),
+
+      // Full reset. Keeps the device's syncKey so the (now-empty) state
+      // still syncs to the same cloud record instead of orphaning it.
+      clearAllData: () =>
+        set({
+          courses: [],
+          assignments: [],
+          exams: [],
+          studyBlocks: [],
+          todos: [],
+          milestoneClears: [],
+          wallpaperDataUrl: null,
+        }),
     }),
     {
       name: "ultimatetaskmanager-storage",
@@ -184,6 +199,31 @@ export const useTaskStore = create<TaskState>()(
   )
 );
 
+// Pushes the current vault-relevant state to the cloud immediately (no
+// debounce). Exported so call sites that need the record to exist right
+// away — e.g. opening the QR pairing modal — don't have to wait on a state
+// change to trigger the subscribe-based debounce below, which otherwise
+// never fires for a brand-new device that hasn't mutated anything yet.
+export function pushVaultToCloud(): Promise<void> {
+  const s = useTaskStore.getState();
+  if (!s.syncKey) return Promise.resolve();
+  const payload: VaultPayload = {
+    courses: s.courses,
+    assignments: s.assignments,
+    exams: s.exams,
+    studyBlocks: s.studyBlocks,
+    todos: s.todos,
+    milestoneClears: s.milestoneClears,
+  };
+  return fetch(`/api/sync/${s.syncKey}`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ payload }),
+  })
+    .then(() => undefined)
+    .catch(() => undefined);
+}
+
 // Auto-sync: any change to the vault-relevant slices gets pushed to the
 // cloud after a 1.5s debounce so rapid edits (e.g. checking off several
 // items) collapse into one request instead of one per mutation.
@@ -201,21 +241,6 @@ if (typeof window !== "undefined") {
     if (!changed) return;
 
     if (syncTimer) clearTimeout(syncTimer);
-    syncTimer = setTimeout(() => {
-      const s = useTaskStore.getState();
-      const payload: VaultPayload = {
-        courses: s.courses,
-        assignments: s.assignments,
-        exams: s.exams,
-        studyBlocks: s.studyBlocks,
-        todos: s.todos,
-        milestoneClears: s.milestoneClears,
-      };
-      fetch(`/api/sync/${s.syncKey}`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ payload }),
-      }).catch(() => {});
-    }, 1500);
+    syncTimer = setTimeout(pushVaultToCloud, 1500);
   });
 }

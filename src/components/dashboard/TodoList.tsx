@@ -62,7 +62,7 @@ export function TodoList() {
   const pending = todos.filter((t) => !t.done);
 
   if (pending.length === 0) {
-    return <p className="text-sm text-zinc-600">Nothing on your to-do list — add something non-school here.</p>;
+    return <p className="text-sm text-zinc-600">Nothing on your to-do list.</p>;
   }
 
   function complete(id: string) {

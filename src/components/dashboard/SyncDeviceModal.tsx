@@ -1,11 +1,20 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { QRCodeSVG } from "qrcode.react";
 import { Check, Copy, X } from "lucide-react";
+import { pushVaultToCloud } from "@/store/useTaskStore";
 
 export function SyncDeviceModal({ syncKey, onClose }: { syncKey: string; onClose: () => void }) {
   const [copied, setCopied] = useState(false);
+
+  // The debounced auto-sync in the store only fires on a state *change*, so
+  // a device that hasn't mutated anything since generating its syncKey would
+  // otherwise never have a vault record to scan into. Push immediately the
+  // moment the user expresses intent to sync, so the QR is always scannable.
+  useEffect(() => {
+    pushVaultToCloud();
+  }, []);
   const origin = typeof window !== "undefined" ? window.location.origin : "https://taskfol.io";
   const syncUrl = `${origin}/s/${syncKey}`;
 

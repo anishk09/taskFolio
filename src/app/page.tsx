@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import { motion } from "framer-motion";
-import { Calculator, ImageIcon, MoreVertical, Plus, QrCode, RotateCcw } from "lucide-react";
+import { Calculator, ImageIcon, MoreVertical, Plus, QrCode, RotateCcw, Share2 } from "lucide-react";
 import { CourseFilterBar } from "@/components/dashboard/CourseFilterBar";
 import { QuickAdd } from "@/components/dashboard/QuickAdd";
 import { PriorityQueue } from "@/components/dashboard/PriorityQueue";
@@ -17,6 +17,7 @@ import { WelcomeVideoModal } from "@/components/onboarding/WelcomeVideoModal";
 import { GpaForecasterModal } from "@/components/dashboard/GpaForecasterModal";
 import { ExportCardModal } from "@/components/dashboard/ExportCardModal";
 import { ClearedMilestoneCard } from "@/components/dashboard/ClearedMilestoneCard";
+import { SemesterRoadmapCard } from "@/components/dashboard/CourseRoadmapCard";
 import { SyncDeviceModal } from "@/components/dashboard/SyncDeviceModal";
 import { useTaskStore } from "@/store/useTaskStore";
 import { fileToWallpaperDataUrl } from "@/lib/wallpaper";
@@ -59,12 +60,16 @@ export default function Home() {
   const [forecasterOpen, setForecasterOpen] = useState(false);
   const [milestoneOpen, setMilestoneOpen] = useState(false);
   const [syncModalOpen, setSyncModalOpen] = useState(false);
+  const [roadmapOpen, setRoadmapOpen] = useState(false);
   const syncKey = useTaskStore((s) => s.syncKey);
   const ensureSyncKey = useTaskStore((s) => s.ensureSyncKey);
   const wallpaperDataUrl = useTaskStore((s) => s.wallpaperDataUrl);
   const setWallpaper = useTaskStore((s) => s.setWallpaper);
   const clearWallpaper = useTaskStore((s) => s.clearWallpaper);
+  const clearAllData = useTaskStore((s) => s.clearAllData);
+  const courses = useTaskStore((s) => s.courses);
   const assignments = useTaskStore((s) => s.assignments);
+  const exams = useTaskStore((s) => s.exams);
   const todos = useTaskStore((s) => s.todos);
   const wallpaperInputRef = useRef<HTMLInputElement>(null);
   const cleared = isAllTasksCleared(assignments);
@@ -127,6 +132,16 @@ export default function Home() {
           </div>
 
           <div className="flex shrink-0 items-center gap-1.5 sm:order-3">
+            {courses.length > 0 && (
+              <button
+                onClick={() => setRoadmapOpen(true)}
+                title="Share Semester Roadmap"
+                aria-label="Share Semester Roadmap"
+                className="flex shrink-0 items-center gap-1.5 rounded-full border border-black/10 bg-white/50 px-3 py-2 text-xs font-medium text-zinc-700 transition-all hover:-translate-y-0.5 hover:bg-white/80"
+              >
+                <Share2 className="h-3.5 w-3.5" />
+              </button>
+            )}
             {syncKey && (
               <button
                 onClick={() => setSyncModalOpen(true)}
@@ -185,6 +200,17 @@ export default function Home() {
                     className="w-full rounded-lg px-2.5 py-2 text-left font-medium text-zinc-700 hover:bg-black/5"
                   >
                     Replay Gallery Tour
+                  </button>
+                  <button
+                    onClick={() => {
+                      if (window.confirm("Clear all courses, tasks, to-dos, and settings? This can't be undone.")) {
+                        clearAllData();
+                      }
+                      setSettingsOpen(false);
+                    }}
+                    className="w-full rounded-lg px-2.5 py-2 text-left font-medium text-[#DC2626] hover:bg-[#DC2626]/5"
+                  >
+                    Clear All Data
                   </button>
                 </div>
               )}
@@ -278,6 +304,12 @@ export default function Home() {
 
       {syncModalOpen && syncKey && (
         <SyncDeviceModal syncKey={syncKey} onClose={() => setSyncModalOpen(false)} />
+      )}
+
+      {roadmapOpen && (
+        <ExportCardModal onClose={() => setRoadmapOpen(false)} filename="taskfolio-semester-roadmap">
+          <SemesterRoadmapCard courses={courses} assignments={assignments} exams={exams} />
+        </ExportCardModal>
       )}
 
       <WelcomeVideoModal open={introOpen} onClose={closeIntro} />
