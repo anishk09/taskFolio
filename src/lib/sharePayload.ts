@@ -26,10 +26,19 @@ export function encodeSharePayload(payload: SharedCoursePayload): string {
   return base64UrlEncode(compressed);
 }
 
+// Bounds on both the compressed input and decompressed output — a crafted
+// join link could otherwise use a small highly-compressed payload to inflate
+// into a huge string and hang the visitor's tab (a decompression-bomb DoS
+// against whoever opens the link, since this runs entirely client-side).
+const MAX_ENCODED_LENGTH = 500_000;
+const MAX_DECODED_LENGTH = 2_000_000;
+
 export function decodeSharePayload(data: string): SharedCoursePayload | null {
+  if (data.length > MAX_ENCODED_LENGTH) return null;
   try {
     const bytes = base64UrlDecode(data);
     const json = inflate(bytes, { toText: true });
+    if (json.length > MAX_DECODED_LENGTH) return null;
     return JSON.parse(json) as SharedCoursePayload;
   } catch {
     return null;
