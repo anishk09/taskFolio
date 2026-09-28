@@ -6,6 +6,7 @@ import { Calculator, ImageIcon, MoreVertical, Plus, RotateCcw } from "lucide-rea
 import { CourseFilterBar } from "@/components/dashboard/CourseFilterBar";
 import { QuickAdd } from "@/components/dashboard/QuickAdd";
 import { PriorityQueue } from "@/components/dashboard/PriorityQueue";
+import { TodoList } from "@/components/dashboard/TodoList";
 import { ExamCountdowns } from "@/components/dashboard/ExamCountdownCard";
 import { WeeklySchedule } from "@/components/dashboard/WeeklySchedule";
 import { WorkloadRings } from "@/components/dashboard/WorkloadRing";
@@ -189,6 +190,9 @@ export default function Home() {
           <GalleryCalendar selectedDate={selectedDate} onSelectDate={setSelectedDate} />
           <Panel title="Priority Queue" index={0}>
             <PriorityQueue filterCourseId={selectedCourseId} filterDate={selectedDate} />
+          </Panel>
+          <Panel title="To-Do List" index={1}>
+            <TodoList />
           </Panel>
         </div>
 

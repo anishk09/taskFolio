@@ -1,7 +1,7 @@
 "use client";
 
 import { useRef, useState } from "react";
-import { BookOpen, CalendarClock, ClipboardList, RefreshCw, Timer, X } from "lucide-react";
+import { BookOpen, CalendarClock, CheckSquare, ClipboardList, RefreshCw, Timer, X } from "lucide-react";
 import { useTaskStore } from "@/store/useTaskStore";
 import { DAY_LABELS } from "@/lib/date";
 import { ACCENT_PRESETS, PALETTE } from "@/lib/palette";
@@ -15,13 +15,14 @@ import {
 } from "@/lib/canvasSync";
 import { CanvasImportModal } from "./CanvasImportModal";
 
-type Kind = "course" | "assignment" | "exam" | "studyBlock" | "canvasSync";
+type Kind = "course" | "assignment" | "exam" | "studyBlock" | "todo" | "canvasSync";
 
 const KIND_TABS: { kind: Kind; label: string; icon: typeof BookOpen }[] = [
   { kind: "course", label: "Course", icon: BookOpen },
   { kind: "assignment", label: "Assignment", icon: ClipboardList },
   { kind: "exam", label: "Exam", icon: CalendarClock },
   { kind: "studyBlock", label: "Study block", icon: Timer },
+  { kind: "todo", label: "To-Do Item", icon: CheckSquare },
   { kind: "canvasSync", label: "Sync Institution", icon: RefreshCw },
 ];
 
@@ -39,6 +40,7 @@ export function QuickAdd({ open, onClose }: { open: boolean; onClose: () => void
   const addAssignment = useTaskStore((s) => s.addAssignment);
   const addExam = useTaskStore((s) => s.addExam);
   const addStudyBlock = useTaskStore((s) => s.addStudyBlock);
+  const addTodo = useTaskStore((s) => s.addTodo);
 
   const [syncPlatform, setSyncPlatform] = useState<"canvas" | "classroom">("canvas");
   const [syncUrl, setSyncUrl] = useState("");
@@ -297,6 +299,28 @@ export function QuickAdd({ open, onClose }: { open: boolean; onClose: () => void
                   <button className={pillButtonCls} disabled={courses.length === 0}>
                     Add Study Block
                   </button>
+                </div>
+              </form>
+            )}
+
+            {kind === "todo" && (
+              <form
+                className="flex flex-col gap-4"
+                onSubmit={(e) => {
+                  e.preventDefault();
+                  const f = new FormData(e.currentTarget);
+                  const title = String(f.get("title") || "").trim();
+                  if (!title) return;
+                  addTodo(title);
+                  e.currentTarget.reset();
+                  onClose();
+                }}
+              >
+                <div className="flex flex-wrap gap-3">
+                  <input name="title" required placeholder="e.g. Renew gym membership" className={`${inputCls} w-64`} />
+                </div>
+                <div className="flex justify-end">
+                  <button className={pillButtonCls}>Add To-Do</button>
                 </div>
               </form>
             )}

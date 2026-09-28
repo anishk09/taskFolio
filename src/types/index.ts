@@ -41,3 +41,12 @@ export type StudyBlock = {
   start: string; // "HH:MM"
   end: string; // "HH:MM"
 };
+
+// General to-do items unrelated to coursework (errands, chores, etc.) —
+// no course, weighting, or grade tie-in.
+export type Todo = {
+  id: string;
+  title: string;
+  done: boolean;
+  createdAt: string; // ISO
+};

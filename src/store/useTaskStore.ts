@@ -1,12 +1,13 @@
 import { create } from "zustand";
 import { persist } from "zustand/middleware";
-import type { Assignment, Course, Exam, StudyBlock } from "@/types";
+import type { Assignment, Course, Exam, StudyBlock, Todo } from "@/types";
 
 type TaskState = {
   courses: Course[];
   assignments: Assignment[];
   exams: Exam[];
   studyBlocks: StudyBlock[];
+  todos: Todo[];
   hasHydrated: boolean;
   wallpaperDataUrl: string | null;
   // One entry per distinct "YYYY-MM-DD" day every task was cleared, each
@@ -31,6 +32,10 @@ type TaskState = {
   addStudyBlock: (block: Omit<StudyBlock, "id">) => void;
   removeStudyBlock: (id: string) => void;
 
+  addTodo: (title: string) => void;
+  removeTodo: (id: string) => void;
+  toggleTodoDone: (id: string) => void;
+
   setHasHydrated: () => void;
 
   setWallpaper: (dataUrl: string) => void;
@@ -46,6 +51,7 @@ export const useTaskStore = create<TaskState>()(
       assignments: [],
       exams: [],
       studyBlocks: [],
+      todos: [],
       hasHydrated: false,
       wallpaperDataUrl: null,
       milestoneClears: [],
@@ -91,6 +97,14 @@ export const useTaskStore = create<TaskState>()(
       removeStudyBlock: (id) =>
         set((s) => ({ studyBlocks: s.studyBlocks.filter((b) => b.id !== id) })),
 
+      addTodo: (title) =>
+        set((s) => ({
+          todos: [...s.todos, { id: crypto.randomUUID(), title, done: false, createdAt: new Date().toISOString() }],
+        })),
+      removeTodo: (id) => set((s) => ({ todos: s.todos.filter((t) => t.id !== id) })),
+      toggleTodoDone: (id) =>
+        set((s) => ({ todos: s.todos.map((t) => (t.id === id ? { ...t, done: !t.done } : t)) })),
+
       setHasHydrated: () => set({ hasHydrated: true }),
 
       setWallpaper: (dataUrl) => set({ wallpaperDataUrl: dataUrl }),
@@ -110,6 +124,7 @@ export const useTaskStore = create<TaskState>()(
         assignments: s.assignments,
         exams: s.exams,
         studyBlocks: s.studyBlocks,
+        todos: s.todos,
         wallpaperDataUrl: s.wallpaperDataUrl,
         milestoneClears: s.milestoneClears,
       }),
