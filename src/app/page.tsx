@@ -88,6 +88,14 @@ export default function Home() {
     // eslint-disable-next-line react-hooks/set-state-in-effect
     if (!localStorage.getItem(INTRO_SEEN_KEY)) setIntroOpen(true);
     ensureSyncKey();
+
+    // PWA manifest shortcuts ("Add Item" / "Grade Forecaster") land here
+    // with ?action=... — open the matching panel once, then drop it from
+    // the URL so a refresh doesn't reopen it.
+    const action = new URLSearchParams(window.location.search).get("action");
+    if (action === "add") setQuickAddOpen(true);
+    if (action === "forecaster") setForecasterOpen(true);
+    if (action) window.history.replaceState(null, "", window.location.pathname);
   }, [ensureSyncKey]);
 
   function closeIntro() {
