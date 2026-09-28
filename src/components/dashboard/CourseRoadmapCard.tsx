@@ -1,6 +1,21 @@
+import { Star } from "lucide-react";
 import type { Assignment, Course, Exam } from "@/types";
 import { getCountdown } from "@/lib/date";
 import { hexToRgba } from "@/lib/palette";
+
+// Fixed positions (not randomized) for a small "constellation" scattered
+// across the hero gradient — a designed motif standing in for a real image,
+// so the card never depends on external art or a generation provider.
+const CONSTELLATION_STARS = [
+  { left: 12, top: 20, size: 10 },
+  { left: 28, top: 62, size: 7 },
+  { left: 48, top: 15, size: 8 },
+  { left: 70, top: 30, size: 12 },
+  { left: 85, top: 68, size: 8 },
+  { left: 60, top: 78, size: 6 },
+  { left: 18, top: 82, size: 6 },
+  { left: 90, top: 15, size: 7 },
+];
 
 type RoadmapItem = {
   id: string;
@@ -52,15 +67,31 @@ export function SemesterRoadmapCard({
         <span className="mb-2 text-sm font-extrabold tracking-tight text-white">
           taskFolio<span className="text-amber-200">.</span>
         </span>
-        <div className="relative h-48 w-full overflow-hidden rounded-2xl border-2 border-white/90 shadow-[0_12px_30px_rgba(217,119,6,0.35)]">
-          {/* eslint-disable-next-line @next/next/no-img-element -- local static art asset, no next/image benefit for a captured card */}
-          <img
-            src="/art/monet-lilies.jpg"
-            alt=""
-            crossOrigin="anonymous"
-            className="h-full w-full object-cover"
-          />
-          <span className="absolute right-2 top-2 rounded-full bg-black/60 px-2 py-1 text-[9px] font-bold uppercase tracking-wide text-amber-100 backdrop-blur-sm">
+        <div className="relative flex h-48 w-full items-center justify-center overflow-hidden rounded-2xl border-2 border-white/90 bg-gradient-to-br from-[#5D4E9E] via-[#8B7EC8] to-[#D9B454] shadow-[0_12px_30px_rgba(217,119,6,0.35)]">
+          {CONSTELLATION_STARS.map((s, i) => (
+            <Star
+              key={i}
+              className="absolute text-white/40"
+              style={{ left: `${s.left}%`, top: `${s.top}%`, width: s.size, height: s.size }}
+              fill="currentColor"
+              strokeWidth={0}
+            />
+          ))}
+          {/* The "." is drawn as a shape, not a text glyph — at this large a
+              size, html-to-image's export renders the period character
+              itself as a solid box instead of a dot, regardless of color
+              syntax. A real shape sidesteps that font-rasterization bug. */}
+          <span
+            className="inline-flex select-none items-end font-sans text-6xl font-extrabold tracking-tight"
+            style={{ color: "rgba(10,11,13,0.18)" }}
+          >
+            tF
+            <span
+              className="mb-2 ml-1 inline-block shrink-0 rounded-full"
+              style={{ width: 14, height: 14, backgroundColor: "#D9B454" }}
+            />
+          </span>
+          <span className="absolute right-2 top-2 rounded-full bg-black/30 px-2 py-1 text-[9px] font-bold uppercase tracking-wide text-white backdrop-blur-sm">
             📚 Semester Roadmap
           </span>
         </div>

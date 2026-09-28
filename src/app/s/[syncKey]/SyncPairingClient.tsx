@@ -44,6 +44,11 @@ function FallingPetals() {
   );
 }
 
+// The Neon round-trip is often well under a second, which would otherwise
+// flash the petals for a single frame before redirecting. Hold the loading
+// screen up for at least this long so the animation actually gets seen.
+const MIN_DISPLAY_MS = 2200;
+
 export function SyncPairingClient({ syncKey }: { syncKey: string }) {
   const router = useRouter();
   const hydrateFromRemote = useTaskStore((s) => s.hydrateFromRemote);
@@ -51,11 +56,14 @@ export function SyncPairingClient({ syncKey }: { syncKey: string }) {
 
   useEffect(() => {
     let cancelled = false;
+    const startedAt = Date.now();
     (async () => {
       try {
         const res = await fetch(`/api/sync/${syncKey}`);
         if (!res.ok) throw new Error(res.status === 404 ? "This sync link has expired or doesn't exist." : "Sync failed.");
         const data = await res.json();
+        const remaining = MIN_DISPLAY_MS - (Date.now() - startedAt);
+        if (remaining > 0) await new Promise((r) => setTimeout(r, remaining));
         if (cancelled) return;
         hydrateFromRemote(data.payload, syncKey);
         router.push("/");
@@ -80,7 +88,7 @@ export function SyncPairingClient({ syncKey }: { syncKey: string }) {
           <>
             <FallingPetals />
             <p className="mt-3 font-sans text-sm font-semibold uppercase tracking-[0.2em] text-zinc-500">
-              Connecting your personal canvas…
+              Opening your taskFolio…
             </p>
           </>
         )}
