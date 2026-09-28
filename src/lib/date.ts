@@ -38,6 +38,15 @@ export function localDateKey(d: Date): string {
   return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
 }
 
+// "YYYY-MM-DDTHH:mm" in local time — the format a <input type="datetime-local">
+// needs as its value. Assignment due dates are stored as either ISO instants
+// (Canvas imports) or raw local strings (manual entry), so this normalizes both.
+export function toLocalInputValue(value: string): string {
+  const d = new Date(value);
+  const pad = (n: number) => String(n).padStart(2, "0");
+  return `${localDateKey(d)}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
+}
+
 export function isSameCalendarDay(a: string | Date, b: string | Date): boolean {
   const da = new Date(a);
   const db = new Date(b);

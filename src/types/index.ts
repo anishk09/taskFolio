@@ -52,3 +52,15 @@ export type Todo = {
   dueDate?: string; // "YYYY-MM-DD"
   dueTime?: string; // "HH:MM"
 };
+
+// A meeting or event that isn't tied to a course (club meeting, office hours,
+// interview, appointment). One-off on `date`, or repeating weekly from it.
+export type Meeting = {
+  id: string;
+  title: string;
+  date: string; // "YYYY-MM-DD" — the day it happens, or the first day if weekly
+  start: string; // "HH:MM"
+  end?: string; // "HH:MM"
+  location?: string;
+  repeatsWeekly: boolean;
+};

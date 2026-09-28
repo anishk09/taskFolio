@@ -1,6 +1,6 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import { formatCountdown, getCountdown, getMonthGridDays, isSameCalendarDay, localDateKey } from "./date";
+import { formatCountdown, getCountdown, getMonthGridDays, isSameCalendarDay, localDateKey, toLocalInputValue } from "./date";
 
 test("getCountdown splits a future target into days/hours/minutes", () => {
   const now = new Date("2026-01-01T00:00:00Z");
@@ -42,4 +42,10 @@ test("getMonthGridDays returns a fixed 42-day Sun-Sat grid covering the referenc
   assert.equal(grid[41].getDay(), 6);
   const firstOfMonth = grid.find((d) => d.getDate() === 1 && d.getMonth() === 8);
   assert.ok(firstOfMonth, "grid must contain Sept 1");
+});
+
+test("toLocalInputValue produces a datetime-local value in local time for local and ISO inputs", () => {
+  assert.equal(toLocalInputValue("2026-03-05T09:07"), "2026-03-05T09:07");
+  const iso = new Date(2026, 2, 5, 23, 59).toISOString();
+  assert.equal(toLocalInputValue(iso), "2026-03-05T23:59");
 });
