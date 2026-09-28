@@ -73,37 +73,39 @@ export function ExportCardModal({
   );
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4" onClick={onClose}>
-      <div
-        onClick={(e) => e.stopPropagation()}
-        className="flex max-h-[90vh] w-full max-w-md flex-col items-center gap-4"
-      >
-        <button
-          onClick={onClose}
-          aria-label="Close"
-          className="self-end rounded-full bg-white/10 p-2 text-white transition-colors hover:bg-white/20"
+    <div className="fixed inset-0 z-50 overflow-y-auto bg-black/50 p-4" onClick={onClose}>
+      <div className="flex min-h-full items-center justify-center">
+        <div
+          onClick={(e) => e.stopPropagation()}
+          className="flex w-full max-w-md flex-col items-center gap-4 py-6"
         >
-          <X className="h-4 w-4" />
-        </button>
+          <button
+            onClick={onClose}
+            aria-label="Close"
+            className="self-end rounded-full bg-white/10 p-2 text-white transition-colors hover:bg-white/20"
+          >
+            <X className="h-4 w-4" />
+          </button>
 
-        <div ref={cardRef} className="w-full">
-          {children}
-        </div>
+          <div ref={cardRef} className="w-full">
+            {children}
+          </div>
 
-        <div className={primaryAction === "copy" ? "flex w-full flex-col items-center gap-2" : "flex items-center gap-3"}>
-          {primaryAction === "copy" ? (
-            <>
-              <div className="w-full">{copyBtn}</div>
-              {downloadBtn}
-            </>
-          ) : (
-            <>
-              {copyBtn}
-              {downloadBtn}
-            </>
-          )}
+          <div className={primaryAction === "copy" ? "flex w-full flex-col items-center gap-2" : "flex items-center gap-3"}>
+            {primaryAction === "copy" ? (
+              <>
+                <div className="w-full">{copyBtn}</div>
+                {downloadBtn}
+              </>
+            ) : (
+              <>
+                {copyBtn}
+                {downloadBtn}
+              </>
+            )}
+          </div>
+          {status && <p className="text-xs font-medium text-white/80">{status}</p>}
         </div>
-        {status && <p className="text-xs font-medium text-white/80">{status}</p>}
       </div>
     </div>
   );
