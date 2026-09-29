@@ -97,19 +97,46 @@ function playBassTone(ctx: AudioContext, root: number, start: number, peakScale:
   });
 }
 
+// Pure pitch math for the completion-streak "level up" effect, kept
+// separate from the Web Audio side effects below so it's unit-testable.
+// Each level bumps the whole chime up a whole step (2 semitones), capped so
+// a long streak tops out instead of climbing into ultrasonic territory.
+const COMBO_STEP_SEMITONES = 2;
+const COMBO_MAX_LEVEL = 8;
+
+export function comboTransposeRatio(level: number): number {
+  const steps = Math.min(Math.max(level, 0), COMBO_MAX_LEVEL);
+  return 2 ** ((steps * COMBO_STEP_SEMITONES) / 12);
+}
+
+// A streak of completions within this window keeps climbing in pitch;
+// pausing this long resets it back to the base pitch, like a game combo
+// counter — only rewards clearing several things in a row, not a full day
+// of scattered task-checking.
+const COMBO_RESET_MS = 3000;
+let comboLevel = 0;
+let comboResetTimer: ReturnType<typeof setTimeout> | null = null;
+
 // A bass-forward, Bose-startup-style tone for checking off a single to-do —
-// but rising low-to-high across two quick steps rather than a single static
-// chord, for a small dopamine "lift" (the way a reward ding climbs in
-// pitch) instead of just a warm thud. Fires often, so it stays short.
+// rising low-to-high across two quick steps for a small dopamine "lift",
+// and transposed a little higher with each item completed in a row, like
+// clearing consecutive levels. Fires often, so it stays short.
 export function playGlassChime(): void {
   if (typeof window === "undefined") return;
   const AudioCtor = getAudioCtor();
   if (!AudioCtor) return;
 
+  const transpose = comboTransposeRatio(comboLevel);
+  comboLevel++;
+  if (comboResetTimer) clearTimeout(comboResetTimer);
+  comboResetTimer = setTimeout(() => {
+    comboLevel = 0;
+  }, COMBO_RESET_MS);
+
   const ctx = new AudioCtor();
   const now = ctx.currentTime;
-  playBassTone(ctx, 130.81, now, 1); // C3
-  playBassTone(ctx, 164.81, now + 0.11, 0.9); // E3 — quick rise up a major third
+  playBassTone(ctx, 130.81 * transpose, now, 1); // C3, transposed by streak level
+  playBassTone(ctx, 164.81 * transpose, now + 0.11, 0.9); // E3 — quick rise up a major third
 
   setTimeout(() => ctx.close(), 700);
 }
