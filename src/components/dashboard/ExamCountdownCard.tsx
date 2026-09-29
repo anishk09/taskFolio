@@ -57,7 +57,7 @@ export function ExamCountdowns({ filterCourseId = null }: { filterCourseId?: str
                 </div>
               )}
             </div>
-            <p className="w-full truncate text-center text-sm font-semibold text-zinc-600">{course?.code ?? "?"}</p>
+            <p className="w-full truncate text-center text-sm font-semibold text-zinc-600">{course?.name || course?.code || "?"}</p>
             <p className="w-full truncate text-center text-base font-bold text-zinc-900">{exam.title}</p>
 
             {c && !c.isPast ? (

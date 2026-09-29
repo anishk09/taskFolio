@@ -36,7 +36,7 @@ export function CourseShareButton({ courseId }: { courseId: string }) {
       <button
         type="button"
         onClick={handleCopyLink}
-        aria-label={`Copy join link for ${course.code}`}
+        aria-label={`Copy join link for ${course.name || course.code}`}
         title="Copy Join Link"
         className="rounded-full p-1 text-zinc-400 opacity-100 transition-colors hover:bg-black/5 hover:text-[#5D4E9E] sm:opacity-0 sm:group-hover:opacity-100"
       >

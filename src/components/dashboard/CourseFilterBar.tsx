@@ -55,7 +55,7 @@ export function CourseFilterBar({
                 type="button"
                 onClick={() => onSelectCourse(active ? null : course.id)}
                 aria-pressed={active}
-                title={course.code}
+                title={course.name || course.code}
                 className="flex max-w-[180px] items-center gap-1.5 rounded-full px-2 py-0.5 font-semibold text-zinc-800 md:max-w-[220px]"
               >
                 <span className="h-2 w-2 shrink-0 rounded-full" style={{ backgroundColor: course.color }} />
@@ -65,7 +65,7 @@ export function CourseFilterBar({
               <button
                 type="button"
                 onClick={() => removeCourse(course.id)}
-                aria-label={`Remove ${course.code}`}
+                aria-label={`Remove ${course.name || course.code}`}
                 className="rounded-full p-1 text-zinc-400 opacity-100 transition-opacity hover:text-[#DC2626] sm:opacity-0 sm:group-hover/pill:opacity-100"
               >
                 <X className="h-3 w-3" />

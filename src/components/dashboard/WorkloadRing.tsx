@@ -29,7 +29,7 @@ export function WorkloadRings() {
             <div className="flex items-center justify-between gap-2">
               <span className="flex min-w-0 items-center gap-2 text-sm font-semibold text-zinc-900">
                 <span className="h-2.5 w-2.5 shrink-0 rounded-full" style={{ backgroundColor: course.color }} />
-                <span className="truncate" title={course.code}>
+                <span className="truncate" title={course.name || course.code}>
                   {course.name || course.code}
                 </span>
               </span>

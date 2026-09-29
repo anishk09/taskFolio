@@ -38,10 +38,17 @@ function JoinContent() {
 
   function handleAdd() {
     if (!payload) return;
-    let course = courses.find((c) => c.code.toUpperCase() === payload.course.code.toUpperCase());
+    // Code is optional now, so it's only a reliable match key when both
+    // sides actually have one — otherwise fall back to matching by name.
+    const matchesSharedCourse = (c: { code: string; name: string }) =>
+      payload.course.code && c.code
+        ? c.code.toUpperCase() === payload.course.code.toUpperCase()
+        : c.name.toUpperCase() === payload.course.name.toUpperCase();
+
+    let course = courses.find(matchesSharedCourse);
     if (!course) {
       addCourse({ code: payload.course.code, name: payload.course.name, color: payload.course.color, professor: "", lectureSlots: [] });
-      course = useTaskStore.getState().courses.find((c) => c.code.toUpperCase() === payload.course.code.toUpperCase());
+      course = useTaskStore.getState().courses.find(matchesSharedCourse);
     }
     if (!course) return;
     for (const a of payload.assignments) {
@@ -61,7 +68,9 @@ function JoinContent() {
           <span className="h-3 w-3 shrink-0 rounded-full" style={{ backgroundColor: payload.course.color }} />
           <div className="min-w-0">
             <p className="truncate font-sans text-lg font-bold tracking-tight text-zinc-900">{payload.course.name || payload.course.code}</p>
-            <p className="text-xs uppercase tracking-widest text-zinc-500">{payload.course.code}</p>
+            {payload.course.code && (
+              <p className="text-xs uppercase tracking-widest text-zinc-500">{payload.course.code}</p>
+            )}
           </div>
         </div>
 
