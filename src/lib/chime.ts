@@ -167,3 +167,42 @@ export function playGlassChime(): void {
 
   setTimeout(() => ctx.close(), 700);
 }
+
+// A bigger landing for clearing 3+ tasks in one streak — built from the
+// exact same sound family as playGlassChime (sine sub + sine body +
+// triangle overtone, lowpass-warmed) rather than switching to a different
+// instrument voice, so it reads as "the same sound, but bigger," not an
+// unrelated genre change. Picks up from wherever the streak's pitch already
+// climbed to, adds one more ascending step, and lands on a fuller chord
+// with a bright sparkle on top for the arrival moment.
+export function playRewardChime(): void {
+  if (typeof window === "undefined") return;
+  const AudioCtor = getAudioCtor();
+  if (!AudioCtor) return;
+
+  const ctx = new AudioCtor();
+  const now = ctx.currentTime;
+  const root = 130.81 * comboTransposeRatio(comboLevel);
+
+  playBassTone(ctx, root, now, 1);
+  playBassTone(ctx, root * 1.26, now + 0.1, 1); // up a major third
+  playBassTone(ctx, root * 1.5, now + 0.2, 1.2); // up a fifth — the landing chord, a touch louder
+
+  const sparkle = ctx.createOscillator();
+  sparkle.type = "triangle";
+  sparkle.frequency.value = root * 3;
+  const sparkleFilter = ctx.createBiquadFilter();
+  sparkleFilter.type = "lowpass";
+  sparkleFilter.frequency.value = 2400;
+  const sparkleGain = ctx.createGain();
+  sparkleGain.gain.setValueAtTime(0, now + 0.2);
+  sparkleGain.gain.linearRampToValueAtTime(0.035, now + 0.24);
+  sparkleGain.gain.exponentialRampToValueAtTime(0.0001, now + 0.9);
+  sparkle.connect(sparkleFilter);
+  sparkleFilter.connect(sparkleGain);
+  sparkleGain.connect(ctx.destination);
+  sparkle.start(now + 0.2);
+  sparkle.stop(now + 0.95);
+
+  setTimeout(() => ctx.close(), 1200);
+}

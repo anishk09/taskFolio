@@ -4,7 +4,7 @@ import { useRef, useState, useSyncExternalStore } from "react";
 import { AnimatePresence, motion, Reorder } from "framer-motion";
 import { Trash2 } from "lucide-react";
 import { useTaskStore } from "@/store/useTaskStore";
-import { playAchievementChime, playGlassChime, recordCompletionAndCheckBurst } from "@/lib/chime";
+import { playGlassChime, playRewardChime, recordCompletionAndCheckBurst } from "@/lib/chime";
 import { getClientNow, getServerNow, subscribeToClock } from "@/lib/clock";
 import { DragHandle, ReorderableItem } from "./ReorderableItem";
 
@@ -81,7 +81,7 @@ export function TodoList() {
     const isBurst = recordCompletionAndCheckBurst();
     const remainingAfterThis = pending.filter((t) => t.id !== id && !inFlightRef.current.has(t.id)).length;
     if (remainingAfterThis === 0 && isBurst) {
-      playAchievementChime();
+      playRewardChime();
     } else {
       playGlassChime();
     }
