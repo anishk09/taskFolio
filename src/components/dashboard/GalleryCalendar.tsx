@@ -148,7 +148,12 @@ export function GalleryCalendar({
         className="grid transition-[grid-template-rows] duration-300 ease-[cubic-bezier(0.16,1,0.3,1)]"
         style={{ gridTemplateRows: viewMode === "week" ? "1fr" : "0fr" }}
       >
-        <div className="overflow-hidden">
+        {/* pt-1 gives headroom for a hovered/selected cell's hover:-translate-y-0.5
+            lift — without it, that 2px rise gets clipped by this wrapper's own
+            top edge. Safe on the collapsed (0fr) side too: grid-template-rows:
+            0fr forces the whole row (padding included) to zero height regardless
+            of content, so this never affects the collapse animation. */}
+        <div className="overflow-hidden pt-1">
           <div className="grid grid-cols-7 gap-2">
             {weekDays.map((day) => (
               <DayCell key={day.toISOString()} day={day} compact={false} dimmed={false} />
@@ -161,7 +166,7 @@ export function GalleryCalendar({
         className="grid transition-[grid-template-rows] duration-300 ease-[cubic-bezier(0.16,1,0.3,1)]"
         style={{ gridTemplateRows: viewMode === "month" ? "1fr" : "0fr" }}
       >
-        <div className="overflow-hidden">
+        <div className="overflow-hidden pt-1">
           <div className="mb-1 grid grid-cols-7 gap-1 sm:gap-2">
             {DAY_ABBR.map((label) => (
               <span key={label} className="truncate text-center text-[9px] font-bold uppercase tracking-tight text-zinc-500 sm:text-[10px] sm:tracking-widest">
