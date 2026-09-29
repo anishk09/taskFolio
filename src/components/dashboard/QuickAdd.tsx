@@ -132,12 +132,13 @@ export function QuickAdd({ open, onClose }: { open: boolean; onClose: () => void
                 onSubmit={(e) => {
                   e.preventDefault();
                   const f = new FormData(e.currentTarget);
-                  const code = String(f.get("code"));
+                  const code = String(f.get("code") || "").trim();
                   const name = String(f.get("name") || "").trim();
+                  if (!name) return;
                   const rawColor = String(f.get("color") || "");
                   addCourse({
                     code,
-                    name: name || code,
+                    name,
                     professor: String(f.get("professor")),
                     color: !rawColor || rawColor === "#000000" ? randomAccent() : rawColor,
                     lectureSlots: f.get("day")
@@ -155,8 +156,8 @@ export function QuickAdd({ open, onClose }: { open: boolean; onClose: () => void
                 }}
               >
                 <div className="flex flex-wrap gap-3">
-                  <input name="code" required placeholder="Code (CS 3510)" className={`${inputCls} w-36`} />
-                  <input name="name" placeholder="Course name (optional)" className={`${inputCls} w-48`} />
+                  <input name="name" required placeholder="Course name" className={`${inputCls} w-48`} />
+                  <input name="code" placeholder="Code (optional)" className={`${inputCls} w-36`} />
                   <input name="professor" placeholder="Professor" className={`${inputCls} w-44`} />
                   <select name="day" defaultValue="" className={`${inputCls} w-36`}>
                     <option value="">No lecture slot</option>
@@ -471,7 +472,7 @@ export function QuickAdd({ open, onClose }: { open: boolean; onClose: () => void
   );
 }
 
-function CourseSelect({ courses }: { courses: { id: string; code: string }[] }) {
+function CourseSelect({ courses }: { courses: { id: string; name: string; code: string }[] }) {
   return (
     <select name="courseId" required defaultValue="" className={`${inputCls} w-36`}>
       <option value="" disabled>
@@ -479,7 +480,7 @@ function CourseSelect({ courses }: { courses: { id: string; code: string }[] }) 
       </option>
       {courses.map((c) => (
         <option key={c.id} value={c.id}>
-          {c.code}
+          {c.name || c.code}
         </option>
       ))}
     </select>

@@ -181,7 +181,7 @@ export function PriorityQueue({
                     style={{ backgroundColor: hexToRgba(accent, 0.14), color: PALETTE.ink }}
                   >
                     <span className="h-1.5 w-1.5 shrink-0 rounded-full" style={{ backgroundColor: accent }} />
-                    {course?.code ?? "Unknown"}
+                    {course?.name || course?.code || "Unknown"}
                   </span>
                   <span className="shrink-0 whitespace-nowrap text-xs text-zinc-600">{a.weightPct}% of grade</span>
                 </div>
