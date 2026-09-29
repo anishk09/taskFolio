@@ -117,6 +117,33 @@ const COMBO_RESET_MS = 3000;
 let comboLevel = 0;
 let comboResetTimer: ReturnType<typeof setTimeout> | null = null;
 
+// Pure "did the last few completions form a burst" check, kept separate
+// from the module's rolling-window state below so it's unit-testable
+// without touching a real clock.
+export function pruneAndCheckBurst(
+  timestamps: number[],
+  now: number,
+  windowMs: number,
+  minCount: number
+): { timestamps: number[]; isBurst: boolean } {
+  const pruned = [...timestamps.filter((t) => now - t <= windowMs), now];
+  return { timestamps: pruned, isBurst: pruned.length >= minCount };
+}
+
+// Tracks every completion (to-dos and assignments alike) in a rolling 20s
+// window. A caller checks this when an item is about to empty its list —
+// "the final cleared task" only gets the bigger reward sound if it capped
+// off clearing 3+ things in a row, not a single isolated completion.
+const BURST_WINDOW_MS = 20_000;
+const BURST_MIN_COUNT = 3;
+let completionTimestamps: number[] = [];
+
+export function recordCompletionAndCheckBurst(): boolean {
+  const { timestamps, isBurst } = pruneAndCheckBurst(completionTimestamps, Date.now(), BURST_WINDOW_MS, BURST_MIN_COUNT);
+  completionTimestamps = timestamps;
+  return isBurst;
+}
+
 // A bass-forward, Bose-startup-style tone for checking off a single to-do —
 // rising low-to-high across two quick steps for a small dopamine "lift",
 // and transposed a little higher with each item completed in a row, like

@@ -1,10 +1,10 @@
 "use client";
 
-import { useState, useSyncExternalStore } from "react";
+import { useRef, useState, useSyncExternalStore } from "react";
 import { AnimatePresence, motion, Reorder } from "framer-motion";
 import { Trash2 } from "lucide-react";
 import { useTaskStore } from "@/store/useTaskStore";
-import { playGlassChime } from "@/lib/chime";
+import { playAchievementChime, playGlassChime, recordCompletionAndCheckBurst } from "@/lib/chime";
 import { getClientNow, getServerNow, subscribeToClock } from "@/lib/clock";
 import { DragHandle, ReorderableItem } from "./ReorderableItem";
 
@@ -60,6 +60,11 @@ export function TodoList() {
   const reorderTodos = useTaskStore((s) => s.reorderTodos);
   const [completingId, setCompletingId] = useState<string | null>(null);
   const nowMs = useSyncExternalStore(subscribeToClock, getClientNow, getServerNow);
+  // Items clicked-to-complete but not yet committed to the store (still
+  // mid COMPLETE_LINGER_MS). Without this, rapid clicks — the exact case
+  // the burst reward is for — undercount: an earlier click's item is still
+  // "pending" in the store when the next click's final-item check runs.
+  const inFlightRef = useRef<Set<string>>(new Set());
 
   const pending = todos.filter((t) => !t.done);
 
@@ -69,9 +74,20 @@ export function TodoList() {
 
   function complete(id: string) {
     setCompletingId(id);
-    playGlassChime();
+    inFlightRef.current.add(id);
+    // The rolling burst window must see every completion, so this always
+    // records — but the bigger reward sound only plays when this item is
+    // also the last one pending, capping off a 3+ streak.
+    const isBurst = recordCompletionAndCheckBurst();
+    const remainingAfterThis = pending.filter((t) => t.id !== id && !inFlightRef.current.has(t.id)).length;
+    if (remainingAfterThis === 0 && isBurst) {
+      playAchievementChime();
+    } else {
+      playGlassChime();
+    }
     setTimeout(() => {
       toggleTodoDone(id);
+      inFlightRef.current.delete(id);
       setCompletingId((cur) => (cur === id ? null : cur));
     }, COMPLETE_LINGER_MS);
   }
